@@ -42,3 +42,9 @@ Thumbs.db
 
 # Local verification screenshots
 /shots/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Standalone single-file build of an earlier version, kept locally only
+ai-engineer-roadmap.html
