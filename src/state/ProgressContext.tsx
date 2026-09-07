@@ -49,21 +49,45 @@ export function ProgressProvider({ children, initial }: { children: ReactNode; i
   const [remoteReady, setRemoteReady] = useState(!supabase);
   const toastId = useRef(0);
   const saveTimer = useRef<number | undefined>(undefined);
+  const lastSyncError = useRef<string | null>(null);
+
+  const pushToast = useCallback((message: string, tone: Toast["tone"] = "plain") => {
+    const id = ++toastId.current;
+    setToasts((t) => [...t, { id, message, tone }]);
+    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000);
+  }, []);
+
+  const reportSyncError = useCallback((message: string) => {
+    if (lastSyncError.current === message) return;
+    lastSyncError.current = message;
+    console.error("Progress sync failed:", message);
+    pushToast("Cloud sync failed. Your progress is still saved in this browser.", "plain");
+  }, [pushToast]);
 
   useEffect(() => {
     if (!supabase || !user) return;
     let alive = true;
     setRemoteReady(false);
     void supabase.from("progress").select("data").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!alive) return;
+        if (error) {
+          reportSyncError(error.message);
+          setRemoteReady(true);
+          return;
+        }
         if (data?.data && typeof data.data === "object") {
           setProgress({ ...emptyProgress(), ...(data.data as Partial<Progress>), v: 1 });
         }
+        lastSyncError.current = null;
+        setRemoteReady(true);
+      }, (error: unknown) => {
+        if (!alive) return;
+        reportSyncError(error instanceof Error ? error.message : "Unable to load cloud progress.");
         setRemoteReady(true);
       });
     return () => { alive = false; };
-  }, [user]);
+  }, [reportSyncError, user]);
 
   const latest = useRef(progress);
   latest.current = progress;
@@ -77,16 +101,29 @@ export function ProgressProvider({ children, initial }: { children: ReactNode; i
     saveTimer.current = window.setTimeout(() => {
       setStorageAvailable(saveProgress(progress));
       if (supabase && user) {
-        void supabase.from("progress").upsert({ user_id: user.id, data: progress, updated_at: new Date().toISOString() });
+        void supabase.from("progress").upsert({ user_id: user.id, data: progress, updated_at: new Date().toISOString() })
+          .then(({ error }) => {
+            if (error) reportSyncError(error.message);
+            else lastSyncError.current = null;
+          });
       }
     }, 120);
     return () => window.clearTimeout(saveTimer.current);
-  }, [progress, remoteReady, user]);
+  }, [progress, remoteReady, reportSyncError, user]);
 
   useEffect(() => {
     const flush = () => {
       window.clearTimeout(saveTimer.current);
       saveProgress(latest.current);
+      if (supabase && user) {
+        void supabase.from("progress").upsert({
+          user_id: user.id,
+          data: latest.current,
+          updated_at: new Date().toISOString(),
+        }).then(({ error }) => {
+          if (error) reportSyncError(error.message);
+        });
+      }
     };
     const onVisibility = () => { if (document.visibilityState === "hidden") flush(); };
     window.addEventListener("pagehide", flush);
@@ -96,13 +133,7 @@ export function ProgressProvider({ children, initial }: { children: ReactNode; i
       document.removeEventListener("visibilitychange", onVisibility);
       flush();
     };
-  }, []);
-
-  const pushToast = useCallback((message: string, tone: Toast["tone"] = "plain") => {
-    const id = ++toastId.current;
-    setToasts((t) => [...t, { id, message, tone }]);
-    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000);
-  }, []);
+  }, [reportSyncError, user]);
 
   const update = useCallback((fn: (p: Progress) => Progress) => setProgress((p) => fn(p)), []);
 
