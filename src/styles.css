@@ -18,6 +18,8 @@
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--tx);font:14px/1.6 var(--sans);
   -webkit-font-smoothing:antialiased;overflow:hidden}
+.auth-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0,var(--ac-dim),transparent 46%),var(--bg)}
+.auth-page .input{display:block;width:100%;box-sizing:border-box;margin-top:6px;background:var(--bg-2);border:1px solid var(--line-2);border-radius:var(--r);padding:10px 11px}
 ::selection{background:var(--ac);color:#fff}
 a{color:var(--ac);text-decoration:none}
 a:hover{text-decoration:underline}

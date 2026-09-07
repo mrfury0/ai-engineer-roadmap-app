@@ -55,6 +55,23 @@ npm run build    # typecheck + production build into dist/
 
 Node 20 or newer.
 
+## Enabling owner sign-in and sync
+
+The live build supports one owner account through Supabase. Without the environment variables below,
+local development keeps the original browser-only behavior.
+
+1. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) in its SQL editor.
+2. Create your owner user in **Authentication → Users** and disable public sign-ups in **Authentication → Providers → Email**.
+3. Add the live Pages URL to **Authentication → URL Configuration → Redirect URLs**.
+4. Add these GitHub repository settings for the deploy workflow:
+  - Actions secret `VITE_SUPABASE_URL`
+  - Actions secret `VITE_SUPABASE_ANON_KEY` (the publishable/anon key, never the service-role key)
+  - Actions variable `VITE_OWNER_EMAIL`
+
+The app checks the configured email before sending a magic link, while Supabase row-level security
+checks `auth.uid()` on every progress read and write. The anon key and owner email are expected to
+be visible in a browser bundle; the service-role key must never be added to this repository or build.
+
 ## Architecture
 
 The interesting decisions, and why they were made that way:
@@ -80,10 +97,10 @@ storage.
 and buys deployment as pure static files: no server rewrites, no 404 fallback, no configuration on
 GitHub Pages beyond turning it on.
 
-**localStorage with export/import, not a backend.** There is no account to create and nothing to
-leak, because there is no server. Moving between machines is an explicit export and import of a
-JSON file. Storage that throws — private mode, disabled site data — degrades to an in-memory
-session with a warning rather than a crash.
+**Supabase sync with local fallback.** The configured live build authenticates the owner with a
+magic link and stores one progress row protected by row-level security. Local development without
+Supabase variables retains localStorage and export/import behavior. Storage that throws — private
+mode, disabled site data — degrades to an in-memory session with a warning rather than a crash.
 
 **A hand-rolled markdown subset rendered to React nodes.** `src/lib/markdown.tsx` supports
 paragraphs, `- ` bullets, `**bold**` and `` `code` `` — and nothing else. It returns React nodes, so

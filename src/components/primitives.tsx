@@ -54,13 +54,13 @@ export function Section({ title, children }: { title: string; children?: ReactNo
   );
 }
 
-export function Button({ children, onClick, variant = "", size = "", disabled, title, type = "button" }: {
+export function Button({ children, onClick, variant = "", size = "", disabled, title, type = "button", style }: {
   children: ReactNode; onClick?: () => void;
   variant?: "p" | "g" | "gh" | ""; size?: "sm" | "lg" | ""; disabled?: boolean; title?: string;
-  type?: "button" | "submit";
+  type?: "button" | "submit"; style?: React.CSSProperties;
 }) {
   return (
-    <button className={`btn ${variant} ${size}`.trim()} onClick={onClick} disabled={disabled} title={title} type={type}>
+    <button className={`btn ${variant} ${size}`.trim()} onClick={onClick} disabled={disabled} title={title} type={type} style={style}>
       {children}
     </button>
   );

@@ -41,6 +41,9 @@ jobs:
         # A project site is served from /<repo>/, so Vite's base path has to match.
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_OWNER_EMAIL: ${{ vars.VITE_OWNER_EMAIL }}
         run: npm run build
 
       - name: Upload Pages artifact

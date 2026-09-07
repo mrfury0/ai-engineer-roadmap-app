@@ -7,6 +7,8 @@ import type { Confidence, LessonStatus, PaceProfile, ProjectStatus } from "../ty
 import { itemById, ticketById, weekOfItem } from "../data";
 import { isDone, weekProgress } from "../lib/selectors";
 import { todayIso } from "../lib/dates";
+import { supabase } from "../lib/supabase";
+import { useOptionalAuth } from "./AuthContext";
 
 export interface Toast { id: number; message: string; tone?: "ok" | "plain" }
 
@@ -40,11 +42,28 @@ interface ProgressApi {
 const Ctx = createContext<ProgressApi | null>(null);
 
 export function ProgressProvider({ children, initial }: { children: ReactNode; initial?: Progress }) {
+  const { user } = useOptionalAuth();
   const [progress, setProgress] = useState<Progress>(() => initial ?? loadProgress());
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [storageAvailable, setStorageAvailable] = useState(true);
+  const [remoteReady, setRemoteReady] = useState(!supabase);
   const toastId = useRef(0);
   const saveTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (!supabase || !user) return;
+    let alive = true;
+    setRemoteReady(false);
+    void supabase.from("progress").select("data").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => {
+        if (!alive) return;
+        if (data?.data && typeof data.data === "object") {
+          setProgress({ ...emptyProgress(), ...(data.data as Partial<Progress>), v: 1 });
+        }
+        setRemoteReady(true);
+      });
+    return () => { alive = false; };
+  }, [user]);
 
   const latest = useRef(progress);
   latest.current = progress;
@@ -53,12 +72,16 @@ export function ProgressProvider({ children, initial }: { children: ReactNode; i
   // flushed when the tab is hidden or closed — otherwise a click made 100ms before
   // someone closes the tab is silently lost.
   useEffect(() => {
+    if (!remoteReady) return;
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(() => {
       setStorageAvailable(saveProgress(progress));
+      if (supabase && user) {
+        void supabase.from("progress").upsert({ user_id: user.id, data: progress, updated_at: new Date().toISOString() });
+      }
     }, 120);
     return () => window.clearTimeout(saveTimer.current);
-  }, [progress]);
+  }, [progress, remoteReady, user]);
 
   useEffect(() => {
     const flush = () => {

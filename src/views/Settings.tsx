@@ -4,6 +4,7 @@ import {
   allItems, cases, flashdeck, interview, paceProfiles, projects, resources, tickets, weeks,
 } from "../data";
 import { useProgress } from "../state/ProgressContext";
+import { useAuth } from "../state/AuthContext";
 import { STORAGE_KEY } from "../state/progress";
 import { todayIso } from "../lib/dates";
 import { Markdown } from "../lib/markdown";
@@ -28,6 +29,7 @@ const TOTAL_HOURS = Math.round(allItems.reduce((s, i) => s + i.time, 0) / 60);
 
 export function Settings({ setCrumbs }: ViewProps) {
   const { progress, setPace, reset, importProgress, storageAvailable, pushToast } = useProgress();
+  const { user, configured, signOut } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => setCrumbs(<b>Settings</b>), [setCrumbs]);
 
@@ -124,10 +126,18 @@ export function Settings({ setCrumbs }: ViewProps) {
 
       <Section title="Your data" />
       <Card>
+        {configured && user ? (
+          <div className="row wrap" style={{ marginBottom: 12, gap: 8 }}>
+            <div className="sub">Signed in as {user.email}</div>
+            <div className="sp" />
+            <Button variant="gh" onClick={() => void signOut()}>Sign out</Button>
+          </div>
+        ) : null}
         <div className="prose" style={{ marginBottom: 12 }}>
           <p>
-            Everything is stored locally in this browser under <code>{STORAGE_KEY}</code>. Nothing is sent
-            anywhere. To move to another machine, export here and import there.
+            {configured ? "Your progress is synced to your private account. A local copy is also kept under " :
+              "Everything is stored locally in this browser under "}<code>{STORAGE_KEY}</code>.
+            {configured ? " Export remains available as a backup." : " Nothing is sent anywhere. To move to another machine, export here and import there."}
           </p>
         </div>
         {storageAvailable ? null : (
