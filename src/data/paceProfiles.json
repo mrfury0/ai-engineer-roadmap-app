@@ -1,0 +1,32 @@
+[
+ {
+  "id": "minimum",
+  "name": "Minimum",
+  "hoursPerDay": 1,
+  "blurb": "Core items only: the spine of the curriculum with nothing optional. Slower to the capstone, but every week still ends with something that runs.",
+  "includes": [
+   "core"
+  ]
+ },
+ {
+  "id": "recommended",
+  "name": "Recommended",
+  "hoursPerDay": 2,
+  "blurb": "Core plus the recommended extensions the projects lean on. This is the pace the time estimates and the twelve-week plan assume.",
+  "includes": [
+   "core",
+   "recommended"
+  ]
+ },
+ {
+  "id": "intensive",
+  "name": "Intensive",
+  "hoursPerDay": 3.5,
+  "blurb": "Everything, including the intensive extensions and stretch builds. Choose it for the weeks you are fresh, not as a permanent setting.",
+  "includes": [
+   "core",
+   "recommended",
+   "intensive"
+  ]
+ }
+]

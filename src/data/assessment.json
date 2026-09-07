@@ -1,0 +1,172 @@
+{
+ "areas": [
+  {
+   "id": "python",
+   "name": "Python",
+   "checks": [
+    "Can you scaffold a new project with uv in src layout (pyproject, dependency groups, console script) and explain why uv.lock is committed but the venv is not?",
+    "Can you take the untyped module from Week 1 and get it through mypy --strict, then name one design flaw the types forced you to fix rather than annotate around?",
+    "Can you write a Pydantic v2 model with a field_validator that normalises input and a rejection rule, and state the validate-at-the-boundary principle in one sentence?",
+    "Can you design a domain exception hierarchy and use raise ... from so a traceback still shows the root cause, and explain why bare except Exception: pass is a bug factory?",
+    "Can you explain why time.sleep or a requests call inside an async def stalls the entire event loop, and demonstrate the fix with asyncio.gather and an async client?",
+    "Can you write a parametrized pytest suite with a monkeypatched clock, and explain why you patch a name where it is used rather than where it is defined?",
+    "Can you configure structured logging once at the entrypoint, log a call with duration_ms, and list three things that must never reach a log line?"
+   ],
+   "nextThirtyDays": "Redo Week 1 Day 2's type-an-untyped-module exercise on a different 40-line file of your own, targeting mypy --strict with zero ignores, then rewrite the Week 1 Market Snapshot CLI from an empty directory in one sitting with no copy-paste. Follow it with Week 2's respx exercise: tests covering 200, 404, 500 and timeout paths for one client, plus the blocking-sleep debug mission timed and repeated until the diagnosis is instant. If the async model is the weak part specifically, rebuild the sequential-versus-gather benchmark and be able to explain the wall-clock ratio out loud before you look at the numbers."
+  },
+  {
+   "id": "backend",
+   "name": "Backend",
+   "checks": [
+    "Can you write a FastAPI dependency that injects Settings and override it in a test with dependency_overrides, without touching environment variables?",
+    "Can you choose the right status code without looking it up for: created a resource, validation failure, missing API key, wrong key with valid format, over rate limit, accepted-for-async-processing?",
+    "Can you protect an endpoint with an API key header using a constant-time comparison, and explain the difference between 401 and 403 with an example of each?",
+    "Can you map a domain exception to an HTTP response through an exception handler, returning a consistent error envelope with a request id and no stack trace?",
+    "Can you implement idempotent POST with an Idempotency-Key so a client retry replays the stored response instead of creating a second row?",
+    "Can you build an SSE streaming endpoint over your LLM client with a working client-disconnect path, and say why a buffering proxy breaks it?",
+    "Can you explain, without notes, the request lifecycle in your own service from middleware through dependencies to the handler and back through exception handlers?"
+   ],
+   "nextThirtyDays": "Rebuild the Week 3 Notes API from scratch in a single day: auth, error envelope, rate limiting with Retry-After, idempotent create, request-id middleware, and a test suite that proves 401, 422 envelope shape and 429 after a burst. Then re-do the Week 3 Day 5 debug mission (retrying client plus non-idempotent endpoint producing duplicate rows) and write the fix as a reusable middleware you keep. Finish by adding the dependency-override test to every project that currently mocks settings by patching os.environ."
+  },
+  {
+   "id": "llms",
+   "name": "LLMs",
+   "checks": [
+    "Can you estimate the token count and dollar cost of a given prompt and completion from a price table, and get the per-million unit right first time?",
+    "Can you state which temperature you would use for extraction, for classification and for ideation, and defend each choice in one sentence?",
+    "Can you get schema-enforced structured output into a validated Pydantic model, and describe the repair ladder for when a model still returns unparseable text?",
+    "Can you write, from memory, the failure-mode table your llm_client handles: 429 with Retry-After, overloaded 5xx, timeout, content refusal, malformed output — and say which of those are retryable?",
+    "Can you implement a fallback chain from a primary model to a cheaper one and explain what you would rather do than fabricate an answer?",
+    "Can you version a prompt as a file with a changelog and a snapshot test, and explain why prompts scattered in f-strings are a maintenance problem?",
+    "Can you say when prompt caching pays for itself, in terms of prefix length and repeat frequency, and what your measured saving was?"
+   ],
+   "nextThirtyDays": "Rewrite llm_client.py from an empty file in one sitting — retries with jitter, timeouts, fallback chain, cost and latency logged as structured events — and prove it with the mocked-SDK tests from Week 4 Day 5. Then re-run the Week 4 Day 4 debug mission (the parser that works 92% of the time) and implement all three rungs of the fix ladder, keeping the schema-enforced version as your default. Finally, redo the Week 5 model bench on ten of your own extraction cases across two model tiers and write the one-paragraph decision memo, because that artefact is what interviewers ask about."
+  },
+  {
+   "id": "rag",
+   "name": "RAG",
+   "checks": [
+    "Can you explain cosine similarity and why normalised dot product is the same thing, and compute a top-k ranking with numpy over your own embedded sentences?",
+    "Can you name three chunking strategies, state the chunk-size-versus-precision tradeoff, and diagnose a retrieval failure caused by a mid-sentence split?",
+    "Can you index chunks in Qdrant with payload metadata and run a filtered search, explaining what the filter buys you over post-filtering the results?",
+    "Can you build an answer path that returns citations mapping back to real chunks, and that refuses honestly when the context does not contain the answer?",
+    "Can you explain why hybrid search exists by naming the query types where embeddings fail — negation, exact codes, names, numbers — and implement BM25 plus vectors merged with reciprocal rank fusion?",
+    "Can you justify a retrieve-20-then-rerank-to-5 pipeline with the cost and latency each stage adds, from your own measurements?",
+    "Can you take a deliberately bad RAG configuration and improve it stepwise using evals, documenting the measured delta of each change?"
+   ],
+   "nextThirtyDays": "Re-run the Week 7 Day 6 fix-the-bad-RAG mission on a fresh corpus you have not used before, with the strict target of at least 25 points of recall@5 improvement, and produce the before-and-after table. Then rebuild the retrieval stack in the Week 6 order — numpy first, then Qdrant, then hybrid, then rerank — measuring after each stage so the ladder is muscle memory rather than a recipe. If citations or refusal are the weak part, redo Week 6 Day 4's grounding exercise with five unanswerable questions and tune until the refusal rate is 100% on them."
+  },
+  {
+   "id": "agents",
+   "name": "Agents",
+   "checks": [
+    "Can you write the agent loop from scratch on a whiteboard — model call, tool_use branch, execute, append result, termination — including the max_steps and repeated-call guards?",
+    "Can you define tools from Pydantic schemas and explain why the tool description is the model's only manual, with an example of a description change that fixed a behaviour?",
+    "Can you persist a transcript as state, kill the agent mid-run and resume it sanely, and describe your context budget strategy for long runs?",
+    "Can you implement an approval gate on a consequential action where the deny path tells the model why it was denied, and test both branches?",
+    "Can you argue agent-versus-workflow for a specific task using your own measured comparison — quality, cost, latency, failure count, debuggability — rather than a blog opinion?",
+    "Can you name the agent failure taxonomy (wrong tool, hallucinated arguments, loop, premature stop, ignored evidence, gave up) and tag ten real runs against it?",
+    "Can you enforce a cost cap and validate tool arguments before execution, and prove it with a hostile test?"
+   ],
+   "nextThirtyDays": "Rewrite the agent loop from an empty file, no framework, until it runs the Week 8 research tasks end to end with a printed trace — then deliberately reproduce the infinite-loop debug mission and fix it with all four guards. Re-run the Week 8 Day 4 workflow-versus-agent comparison on a new task and write the verdict paragraph honestly, including the case where the workflow wins. If evaluation is the weak part rather than the loop, run ten agent tasks, tag every failure against the taxonomy, ship one fix and record the re-run delta."
+  },
+  {
+   "id": "evals",
+   "name": "Evals",
+   "checks": [
+    "Can you build a gold set of at least 40 cases with difficulty tags, expected source ids, paraphrase variants and unanswerable cases, and defend the expected answers to a domain expert?",
+    "Can you compute recall@k and MRR over that gold set and explain what each one tells you that the other does not?",
+    "Can you design an LLM judge with a rubric and a structured verdict, calibrate it against ten of your own hand labels, and state the agreement percentage?",
+    "Can you name four judge failure modes — position bias, verbosity bias, self-preference, sycophancy toward confident tone — and describe a mitigation for each?",
+    "Can you wire evals as assertions with thresholds so a regression fails loudly, and demonstrate it by breaking one threshold on purpose?",
+    "Can you run error analysis properly: read the five worst cases, tag the failure category, fix the category rather than the case, and record the measured delta?",
+    "Can you produce a one-page before-and-after report with a metrics table that a non-technical stakeholder would understand?"
+   ],
+   "nextThirtyDays": "Extend your gold set to 60 cases including at least ten unanswerable and ten paraphrase pairs, then re-baseline every metric and commit the results history file. Repeat the judge calibration exercise from Week 7 Day 3 on a fresh set of ten hand-labelled answers, and if agreement is below 80%, rewrite the rubric to require quote-level evidence per claim and re-measure. Then run one full error-analysis cycle a week for four weeks — five worst cases, one category fix, one recorded delta — because the discipline, not the harness, is what is actually missing."
+  },
+  {
+   "id": "databases",
+   "name": "Databases",
+   "checks": [
+    "Can you define SQLAlchemy 2.0 models with DeclarativeBase, Mapped and mapped_column, and explain why one Session per request beats a shared module-level Session?",
+    "Can you spot an N+1 from a SQL echo log and fix it with eager loading or an aggregate, and say why it never showed up in local testing?",
+    "Can you write an Alembic migration that renames a column without losing data, and describe two things autogenerate gets wrong?",
+    "Can you write the add-nullable, backfill, set-NOT-NULL sequence and explain why dropping a column is riskier than adding one during a rolling deploy?",
+    "Can you design a cache key for an LLM answer that encodes every dependency, and implement invalidation by bumping an index version on ingest?",
+    "Can you implement a fixed-window rate limiter with INCR plus a conditional EXPIRE, and explain what goes wrong when EXPIRE is called on every request?",
+    "Can you use SET NX EX as both an idempotency guard and a worker lock, and say why a lock without a TTL is a future outage?"
+   ],
+   "nextThirtyDays": "Rebuild the Week 9 Day 1 schema from an empty database using only Alembic — no create_all — including the rename migration and the three-step backfill, and test both against a database that actually has rows in it. Then redo the stale-cache debug mission from Week 9 Day 2 from the artefact alone and add the ingest-then-ask regression test to your suite permanently. If Redis is the weak part, re-implement all four patterns (cache-aside, INCR rate limit, SET NX idempotency, hash-based job status) in a single 100-line scratch file with a test for each, then delete it and do it again from memory."
+  },
+  {
+   "id": "system-design",
+   "name": "System Design",
+   "checks": [
+    "Can you run the six-step method visibly under a timer — requirements, napkin math, data flows, components, failure modes, cost — without jumping straight to boxes?",
+    "Can you convert a user count into requests per second, tokens per day, gigabytes stored and jobs per hour in under five minutes, with rounded numbers and named assumptions?",
+    "Can you say where the queue sits in your design and exactly what that boundary buys you — fast acknowledgement, burst absorption, independent scaling, retry ownership?",
+    "Can you produce a mermaid architecture diagram that lives in the repo and marks the queue boundary and every cache with its key?",
+    "Can you state the dual-write problem and the outbox pattern in under 30 seconds, including what the outbox does not give you?",
+    "Can you give a monthly cost figure with the two assumptions it hangs on and the lever that moves it most, then quote a range rather than a point estimate?",
+    "Can you review someone else's design and find the three recurring flaws — slow work on a fast path, a cache key missing an identity dimension, bulk work sharing a lane with interactive work?"
+   ],
+   "nextThirtyDays": "Do one timed 30-minute design a week from a cold start — an AI email assistant, a support-ticket triage platform, a document-review service for a law firm, an internal search assistant — and each time write the diff against a design you produced a week earlier, tracking whether you still skip requirements under pressure. Redo the Week 9 Day 5 email-assistant exercise specifically, then compare against the expert design again and check whether the gaps repeated. Pair it with the Week 9 Day 5 napkin-math drills until tokens-per-day and cost-per-query arrive without a calculator."
+  },
+  {
+   "id": "deployment",
+   "name": "Deployment",
+   "checks": [
+    "Can you write a multi-stage Dockerfile with uv that installs dependencies before copying source, runs as a non-root user, and has a .dockerignore that earns its place?",
+    "Can you explain why a one-line code change was reinstalling every dependency, in terms of layer cache ordering?",
+    "Can you bring up api, worker, postgres, redis and the vector store with one compose command, with healthchecks and volumes that survive a restart?",
+    "Can you write a GitHub Actions workflow that lints, tests and runs a capped eval smoke on every pull request, with secrets handled properly?",
+    "Can you deploy a containerised service to a public URL with a health check wired to the platform, auto-deploy on main, and cold-start behaviour documented honestly?",
+    "Can you keep all configuration in the environment with fail-fast validation at startup, and explain what breaks when a secret is baked into an image?",
+    "Can you sequence a schema change and a code deploy so old and new code can both run during the rollout?"
+   ],
+   "nextThirtyDays": "Containerise a project you have not yet containerised, then deliberately break the layer order and measure the rebuild time difference so the cache lesson is empirical rather than remembered. Rebuild the compose stack from Week 10 Day 5 from an empty file with healthchecks and named volumes, and prove data survives a full down-and-up cycle. Then set up the Actions pipeline on that repo including the capped eval smoke, and open one deliberately failing pull request to watch the gate work before you trust it."
+  },
+  {
+   "id": "reliability",
+   "name": "Reliability",
+   "checks": [
+    "Can you propagate a correlation id from the API edge through a job payload into a worker, so one request's logs reassemble across processes?",
+    "Can you produce a timing tree for a single request showing where the milliseconds went, and use it to name the slowest stage?",
+    "Can you map the four golden signals onto an LLM service and say which one spikes first when a provider starts rate-limiting you?",
+    "Can you explain why exponential backoff alone still synchronises clients and what full jitter does about it?",
+    "Can you implement a circuit breaker with closed, open and half-open states from scratch, and describe the fallback ladder underneath it?",
+    "Can you diagnose a retry storm from a log timeline and name all four fixes — jitter, bounded total attempts, a breaker, honouring Retry-After?",
+    "Can you set a timeout budget that nests correctly, so retries and backoff fit inside the client's deadline?"
+   ],
+   "nextThirtyDays": "Rewrite the circuit breaker from an empty file in under 40 lines and prove its three state transitions with the chaos harness at 30% injected failures, then wire the full fallback ladder beneath it and test each rung. Re-do the Week 10 Day 2 retry-storm debug mission from the log timeline alone, timed, until the diagnosis takes under five minutes. If observability is the weaker half, add correlation ids and span timing to a project that does not have them and produce a real trace tree for one slow request, then record latency in a finally block so failures stop being invisible."
+  },
+  {
+   "id": "security",
+   "name": "Security",
+   "checks": [
+    "Can you demonstrate indirect prompt injection against your own RAG by planting instructions in a retrieved document, then apply layered mitigations and state the residual risk honestly?",
+    "Can you explain why tenant isolation must be enforced as a hard filter at the retriever and never as a system-prompt instruction?",
+    "Can you write the test that proves user A cannot retrieve user B's document, and say where tenant_id must appear — tables, vector payloads, cache keys?",
+    "Can you audit a repository for leaked secrets, keep configuration in the environment only, and explain what to do the hour after a key is exposed?",
+    "Can you redact PII before it reaches a log or a third-party trace, and state what you log about an LLM call instead of the prompt itself?",
+    "Can you verify an inbound webhook properly — raw bytes, HMAC over timestamp and body, constant-time comparison, timestamp tolerance, dedupe by event id?",
+    "Can you constrain an agent with a tool allowlist, argument validation before execution and sandboxed paths, and prove it with a hostile test?"
+   ],
+   "nextThirtyDays": "Attack your own capstone for one focused session: plant three injection payloads in the corpus, attempt a cross-tenant retrieval, and try to make a tool run outside its sandbox — then write up what worked, what your mitigations caught and what residual risk remains. Add the tenant-isolation test and the redaction middleware permanently to the suite so they cannot regress. Then re-do the Week 10 Day 3 cross-customer leak drill from the architecture sketch and logs alone, and repeat the OWASP LLM Top 10 as a checklist pass over the deployed service, noting one concrete gap per item you cannot dismiss."
+  },
+  {
+   "id": "consulting",
+   "name": "Consulting",
+   "checks": [
+    "Can you run a discovery conversation from your question bank — users, volume, current process, cost of failure, data access and freshness, compliance, success definition, budget shape — without pitching a solution?",
+    "Can you name three disqualifiers that should make you decline or reshape an engagement, and say them out loud to a client politely?",
+    "Can you build a build-versus-buy options table covering capability fit, data control, lock-in and total cost of ownership, and give a recommendation rather than a menu?",
+    "Can you produce a cost model with best, expected and worst cases, ranges rather than false precision, and a sensitivity note on the two assumptions that dominate?",
+    "Can you write an architecture note for a mixed technical and non-technical audience — one diagram, a component table with alternatives considered, a data-flow narrative, explicit tradeoffs — plus a risk register scored by likelihood and impact with named owners?",
+    "Can you define POC success criteria and kill criteria before building, and list the POC-to-production gap items (evals, security review, observability, runbook, cost controls, tenant isolation)?",
+    "Can you complete all eight sections of a consulting case in 40 timed minutes and score yourself honestly against the expert answer?"
+   ],
+   "nextThirtyDays": "Re-attempt two of the five consulting cases you scored lowest on, timed at 40 minutes, and score against the expert rubric again — the gap between attempt one and attempt two is the actual measure of progress. Write a fresh one-page cost model and risk register for a system you did not build, so the artefacts are not memory retrieval, and have someone non-technical read the architecture note and tell you what they understood. If discovery is the weak section, rehearse the question bank aloud against three invented briefs until you can run it without notes and catch yourself before proposing a solution in the first ten minutes."
+  }
+ ]
+}

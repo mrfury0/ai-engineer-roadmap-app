@@ -1,0 +1,650 @@
+[
+ {
+  "id": "iv-python-1",
+  "topic": "python",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "What does 'raise DomainError(...) from err' give you that raising a new exception without 'from' doesn't?",
+  "answer": "It chains the original exception as __cause__, so the traceback prints the low-level root cause followed by 'The above exception was the direct cause of...' and then your domain-level error. Without it you either lose the root cause or get the misleading 'During handling of the above exception, another exception occurred' framing. In production it is the difference between seeing only 'DataFetchError: filings fetch failed' and also seeing the httpx.ConnectTimeout that actually caused it.",
+  "followup": "When would you deliberately write 'from None'?"
+ },
+ {
+  "id": "iv-python-2",
+  "topic": "python",
+  "type": "short",
+  "difficulty": 2,
+  "q": "When do you reach for a Pydantic model versus a plain dataclass?",
+  "answer": "Pydantic belongs at the boundary, where untrusted data enters: API payloads, config, LLM output, files. It parses, coerces and validates, and gives you precise errors. Dataclasses are for internal data you already trust: near-zero overhead, no validation machinery, frozen=True for immutability.\n\nThe principle is validate once at the edge, then trust your types inside. Using Pydantic everywhere buys repeated validation cost and couples your core logic to a serialization library; using dataclasses at the boundary means junk flows in unchecked.",
+  "followup": "What concretely goes wrong if a team uses dicts instead of either?"
+ },
+ {
+  "id": "iv-python-3",
+  "topic": "python",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Explain when async actually makes Python faster - and when it does nothing.",
+  "answer": "Async is cooperative waiting on a single thread. While one coroutine awaits a network response, the event loop runs others, so I/O-bound work overlaps: ten API calls via asyncio.gather take roughly the time of the slowest one instead of the sum.\n\nFor CPU-bound work it does nothing: the loop only switches at await points, and number-crunching never yields, so everything else stalls behind it. That work belongs in a process pool. The corollary is that one blocking call (time.sleep, the requests library, a sync DB driver) inside async code freezes every request in the service, not just its own.",
+  "followup": "Someone calls time.sleep(2) inside an async handler - what do users of other endpoints observe?"
+ },
+ {
+  "id": "iv-python-4",
+  "topic": "python",
+  "type": "coding",
+  "difficulty": 2,
+  "q": "Sketch a fetch function with a production-grade retry policy. What do you write, and what do you refuse to retry?",
+  "answer": "Three ingredients: explicit timeouts, narrow retry conditions, exponential backoff with jitter. I wrap 5xx responses in my own RetryableStatus error so the retry predicate stays a clean exception-type check.\n\nKey lines:\nclient = httpx.Client(timeout=httpx.Timeout(connect=5, read=10, write=5, pool=5))\n\n@retry(stop=stop_after_attempt(4),\n       wait=wait_exponential_jitter(initial=0.5, max=8),\n       retry=retry_if_exception_type((httpx.TimeoutException, httpx.ConnectError, RetryableStatus)),\n       reraise=True,\n       before_sleep=before_sleep_log(logger, logging.WARNING))\ndef fetch(url): ...\n\nI retry timeouts, connection errors and 5xx. I never retry 4xx - the request itself is wrong, and retrying a 400 four times just quadruples the noise. And I only blind-retry idempotent operations; a POST that creates something needs an idempotency key first.",
+  "followup": "How do you prove the 500-500-200 path works without hitting a real server?"
+ },
+ {
+  "id": "iv-python-5",
+  "topic": "python",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "A test passes when run alone but fails in the full suite. Walk me through your investigation.",
+  "answer": "This is order-dependent shared state, so first I make it reproducible: run the failing test together with progressively fewer neighbours (or use pytest -p no:randomly / random-order bisection) until I have the minimal failing pair.\n\nThen the usual suspects, roughly in order: a fixture with too-wide scope (module/session) holding mutable state another test dirtied; module-level singletons and caches - an lru_cache, a client instantiated at import, a loaded Settings object; monkeypatching or env vars that leak because someone patched without the fixture; and test A committing rows or files that test B assumes absent.\n\nThe fix is isolation, not reordering: narrow the fixture scope, reset state in teardown, inject dependencies instead of importing globals. A suite that only passes in one order is telling you the production code has hidden global state - that's the real finding.",
+  "followup": "Related classic: a mock is patched at the wrong import path, tests are green, prod is broken. Why?"
+ },
+ {
+  "id": "iv-python-6",
+  "topic": "python",
+  "type": "short",
+  "difficulty": 3,
+  "q": "How do you design a codebase's failure modes, rather than handling exceptions ad hoc?",
+  "answer": "I define a small domain hierarchy - AppError at the root, then a handful like DataFetchError and DataParseError - and wrap low-level exceptions at boundaries with 'raise DomainError(context) from err' so tracebacks keep the root cause but callers only ever catch domain types.\n\nEach error is classified retryable or fatal, which is what retry policies and API handlers key off. Catches are narrow (never bare except), and each error is logged once, with context, at the layer that handles it - not at every layer it passes through.\n\nThe payoff shows up at the edges: a FastAPI exception handler maps DataFetchError to 502 and ValidationError to 422 in one place, and the retry decorator has a clean predicate. Error handling becomes architecture instead of whack-a-mole.",
+  "followup": "Where does 'except Exception: pass' fit into this worldview?"
+ },
+ {
+  "id": "iv-apis-1",
+  "topic": "apis",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "401 versus 403 - which is which?",
+  "answer": "401 Unauthorized: not authenticated - missing or invalid credentials; the server is asking 'who are you?'. 403 Forbidden: authenticated, but not allowed to do this - 'I know who you are, and no'. Auth failures on a missing API key are 401; a valid key hitting another tenant's resource is 403.",
+  "followup": "When might you return 404 instead of 403, and why?"
+ },
+ {
+  "id": "iv-apis-2",
+  "topic": "apis",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Why do idempotency keys exist, and how does the mechanism actually work?",
+  "answer": "Networks fail after the server acted but before the client heard: the client must retry, but a retried POST would charge the card or create the row twice. POST isn't idempotent by contract, so we make specific operations idempotent by hand.\n\nThe Stripe pattern: the client generates a unique key per logical operation and sends it in a header. The server stores the outcome under that key; a replay with the same key returns the stored response instead of re-executing. Keys are scoped per endpoint, expire after a window (say 24h), and the same key with a different payload is a 409 - that's a client bug, not a retry.",
+  "followup": "Where do you store the keys, and what happens when two requests with the same key race?"
+ },
+ {
+  "id": "iv-apis-3",
+  "topic": "apis",
+  "type": "short",
+  "difficulty": 2,
+  "q": "What does FastAPI's dependency injection buy you over importing shared globals?",
+  "answer": "Three things. Composition: request-scoped providers - get_settings, get_db, auth, pagination - declared once and stacked; putting an auth dependency on a router protects every route under it. Lifecycle: dependencies can cache per-request or manage cleanup with yield.\n\nBut the killer feature is testability: app.dependency_overrides swaps the real auth or settings or client for a fake in one line, no monkeypatching of import paths, no network in tests. If dependencies were module globals you'd be patching at every use site and praying you found them all.",
+  "followup": "How would you share one httpx.AsyncClient across all requests, and why bother?"
+ },
+ {
+  "id": "iv-apis-4",
+  "topic": "apis",
+  "type": "coding",
+  "difficulty": 2,
+  "q": "Describe how you'd add per-key rate limiting to an endpoint. What do you write?",
+  "answer": "Simplest robust version is a fixed window in Redis, keyed by API key and minute:\n\nkey = 'rate:' + api_key + ':' + str(now_minute)\nn = redis.incr(key)\nif n == 1: redis.expire(key, 60)\nif n > LIMIT: raise HTTPException(429, headers={'Retry-After': str(seconds_left)})\n\nReturn 429 with Retry-After so well-behaved clients can back off with jitter instead of hammering. In FastAPI this lives in a dependency so it composes with auth (limit per identified key, not per IP). slowapi gives you the decorator version if you'd rather not hand-roll.\n\nTradeoff worth saying aloud: fixed windows allow a 2x burst straddling the boundary; sliding windows or token buckets fix that at the cost of state and complexity. For most APIs, fixed window plus sensible limits is fine - say so, ship it, revisit with data.",
+  "followup": "Why must the limiter live in Redis rather than a Python dict once you scale past one process?"
+ },
+ {
+  "id": "iv-apis-5",
+  "topic": "apis",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "After a flaky network day, your notes API has duplicate rows for some users. What happened, and what do you change?",
+  "answer": "A retrying client meeting a non-idempotent POST. The create succeeded, the response got lost, the client (or its SDK, or a proxy) retried, and the server happily created again. Nobody did anything wrong by their own contract - which is exactly why the contract must change.\n\nFixes, in order: accept an Idempotency-Key on create, store the first response and replay it for retries; enforce a uniqueness constraint in the database as the backstop (the constraint catches races the application misses); and audit the client so it only auto-retries idempotent requests. Then write the test that sends the same create twice and asserts exactly one row - that test is the actual deliverable.",
+  "followup": "Two concurrent requests arrive with the same key before either completes - how do you handle the race?"
+ },
+ {
+  "id": "iv-apis-6",
+  "topic": "apis",
+  "type": "short",
+  "difficulty": 3,
+  "q": "How do you design error responses for an API other engineers will build against?",
+  "answer": "One consistent envelope everywhere - something like {error: {code, message, request_id}} - so clients parse errors one way, not per-endpoint. Codes are stable, machine-readable strings (rate_limited, upstream_timeout); messages are for humans and safe to change.\n\nStatus codes carry the semantics: 422 validation with field details, 409 conflict, 429 with Retry-After, 502/504 for upstream failures. Never leak stack traces or internal exception text - that's an information disclosure and a support burden. The request_id ties the response to your logs, which turns 'it failed' tickets into 30-second lookups.\n\nImplementation-wise: domain exceptions map to the envelope in one central exception handler, and the shape is pinned by tests so it can't drift.",
+  "followup": null
+ },
+ {
+  "id": "iv-llms-1",
+  "topic": "llms",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "What does temperature actually control, and what do you set for structured extraction?",
+  "answer": "It scales the randomness of token sampling: low temperature concentrates probability on the top tokens, high temperature flattens the distribution. Use 0 (or near) for extraction, classification and eval runs where you want determinism; around 1 for ideation and varied prose. It changes variance, not truthfulness - temperature 0 hallucinates just as confidently.",
+  "followup": "Why can temperature 0 still produce different outputs across runs?"
+ },
+ {
+  "id": "iv-llms-2",
+  "topic": "llms",
+  "type": "short",
+  "difficulty": 1,
+  "q": "Total latency is unchanged, so why does streaming matter so much for LLM products?",
+  "answer": "Because users experience time-to-first-token, not total time. An 8-second answer that starts rendering at 500ms feels responsive; the same answer behind a spinner feels broken. Streaming also lets users cancel early - a saved generation is saved money.\n\nSo I track TTFT and total as separate metrics (p50/p95 each). Mechanically it's server-sent events relaying model deltas; the engineering cost is small and the UX difference is the product.",
+  "followup": "Which do you optimize for a chat UI versus a batch pipeline, and why?"
+ },
+ {
+  "id": "iv-llms-3",
+  "topic": "llms",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Your endpoint needs JSON from the model. Walk me up the reliability ladder.",
+  "answer": "Rung one: 'please return JSON' in the prompt - hope-based engineering, fails a several percent of the time via markdown fences, prose preambles and trailing commas. Rung two: JSON mode - syntactically valid JSON guaranteed, but not your schema: fields go missing or arrive mistyped.\n\nRung three, the production answer: schema-enforced structured output (or the tool-schema trick), with a Pydantic model as the single source of truth - the schema constrains generation, and field descriptions double as prompting. Keep a repair path for the residue: one retry that feeds the validation error back to the model. Make absent data legal with Optional fields, or the model will invent values to satisfy the schema. The goal is eliminating the failure class, not patching instances.",
+  "followup": "What do you do with fields that are genuinely absent from the source text?"
+ },
+ {
+  "id": "iv-llms-4",
+  "topic": "llms",
+  "type": "coding",
+  "difficulty": 2,
+  "q": "Describe the llm_client module you'd build before shipping any LLM feature.",
+  "answer": "One entry point - complete(request) - that every feature calls, so resilience and telemetry live in exactly one place. Inside it:\n\n- Timeouts always set, including streaming read timeouts.\n- Retries with exponential backoff and jitter on 429/5xx/overloaded/timeouts, honoring Retry-After when present; capped attempts.\n- No retry on 4xx or content refusals - a refusal is an answer, and retrying it is both pointless and a policy smell.\n- Model fallback chain: primary, then a cheaper or secondary model when the primary is down or over budget.\n- Every call logged as a structured event: model, input_tokens, output_tokens, cost, duration_ms, outcome. The usage object is money - log it.\n- Provider-agnostic request/response types so Anthropic and OpenAI swap behind the interface.\n\nTested with a mocked SDK: the 429-then-success path, the fallback path, and the refusal path each get a test. This module is boring, which is the point - every later feature inherits its reliability.",
+  "followup": "Why is a content refusal not retryable, and what should the caller receive instead?"
+ },
+ {
+  "id": "iv-llms-5",
+  "topic": "llms",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "Your LLM bill tripled this week on flat traffic. Where do you look?",
+  "answer": "First the cost ledger - per-request model, token counts and cost in structured logs. If that ledger doesn't exist, that's finding number one, because without it you're guessing.\n\nThen the usual suspects, grouped by what grows silently: conversation history appended without a token budget, so every turn re-sends the whole transcript; RAG context growth - someone raised k or ingested bigger documents, and the packed prompt doubled; prompt-cache hit rate collapsed - a volatile value like a timestamp landed in the cached prefix, or a template change altered the prefix bytes; a fallback chain quietly routing traffic to the expensive model; retries double-billing during a provider wobble; or a raised max_tokens letting outputs run long.\n\nDiff token counts per route week-over-week and the culprit usually falls out in an hour. Then the guardrails: history budgets, cache hit-rate alerts, per-route cost dashboards, and a budget alarm so the next tripling pages someone before finance notices.",
+  "followup": "Which single guardrail would you add first, and why?"
+ },
+ {
+  "id": "iv-llms-6",
+  "topic": "llms",
+  "type": "short",
+  "difficulty": 3,
+  "q": "When does prompt caching pay for itself, and how do you place the breakpoints?",
+  "answer": "Caching pays when a long, byte-stable prefix recurs within the cache TTL. Structure prompts stable-to-volatile: system contract, tool definitions and shared context first, then the breakpoint, then per-request content. Anything volatile above the breakpoint - a timestamp, a user name - changes the prefix bytes and destroys the hit rate.\n\nThe economics: cache writes cost a premium (about 1.25x base input on Anthropic's 5-minute tier), reads cost about a tenth of base. So a prefix must be re-read at least a couple of times within the TTL to break even - great for multi-turn chat and burst workloads over shared context, pointless for one-shot unique prompts. Separately, response-level caching (exact-match hash of the whole request) handles identical repeated requests for near-free. Measure both with a before/after cost ledger, not intuition.",
+  "followup": "Your cache hit rate is 4% - name two likely causes."
+ },
+ {
+  "id": "iv-rag-1",
+  "topic": "rag",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "Why chunk documents at all, instead of embedding whole documents?",
+  "answer": "Three reasons. Embedding dilution: one vector averaging fifty topics matches nothing well - small, focused chunks give sharp similarity. Context budget: you can only pack so many tokens into the prompt, so retrieval units must be small. Citation granularity: 'see page 3, section 2' is a citation; 'see this 80-page PDF' is not. Chunking sets the resolution of your retrieval.",
+  "followup": null
+ },
+ {
+  "id": "iv-rag-2",
+  "topic": "rag",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Chunk size: what breaks when chunks are too small, and when too big?",
+  "answer": "Too small and you shear facts from their labels - 'revenue grew' in one chunk, '23% in Q3' in the next - so retrieval returns fragments that can't support an answer. Too big and you get embedding dilution (the vector is about everything, so it matches nothing precisely), drowned context after packing, and burned token budget.\n\nMitigations: overlap so boundary-spanning facts survive whole in at least one chunk, structure-aware splitting along headings and paragraphs rather than raw character counts, and contextual retrieval - prepending a line of document context to each chunk. Then stop theorizing: sweep chunk size against your gold set and let recall@k pick the number.",
+  "followup": "How would you detect the too-small failure in production rather than in an eval?"
+ },
+ {
+  "id": "iv-rag-3",
+  "topic": "rag",
+  "type": "short",
+  "difficulty": 2,
+  "q": "What is a grounding contract, and why is honest refusal worth more than eloquence in enterprise RAG?",
+  "answer": "The grounding contract is the prompt-level rule: answer only from the provided context, cite the chunks you used, and if the context doesn't contain the answer, say so explicitly. Citations must map back to real chunk ids so claims are checkable.\n\nWhy refusal matters: a confident wrong answer in a legal or financial setting creates liability and, worse, silently destroys user trust - once a user catches one invented figure, they re-verify everything and the tool is dead. A refusal is actionable: it tells you what's missing from the corpus. That's why gold sets must include unanswerable questions with refusal as the expected behavior - you test the honesty, not just the accuracy.",
+  "followup": "How do you stop the model over-refusing on questions the context does answer?"
+ },
+ {
+  "id": "iv-rag-4",
+  "topic": "rag",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "Your RAG system retrieves chunks that are semantically similar but factually irrelevant to the question. What do you investigate?",
+  "answer": "First, look at actual data: pull the top-k for five failing queries and read them. The failure signatures point at different causes, and guessing without transcripts is how teams burn weeks.\n\nWhat I check, in order: vocabulary mismatch - the user asks 'how profitable?' while the document says 'operating margin'; embeddings match topic, not intent, so query rewriting or expansion helps. Embedding blind spots - negation, numbers, exact identifiers all embed 'close but wrong'; if failing queries contain codes, names or exact terms, add BM25 alongside vectors and fuse with RRF. Chunking - fragments without enough context embed vaguely and match everything; check boundary quality and overlap. Then precision: retrieve wider (20) and rerank with a cross-encoder down to 5, which directly targets 'similar but irrelevant'.\n\nEvery change gets measured against the gold set - recall@k and MRR before and after, one change at a time. If there's no gold set, building one is step zero.",
+  "followup": "Which single change usually gives the biggest lift for exact-term queries, and why?"
+ },
+ {
+  "id": "iv-rag-5",
+  "topic": "rag",
+  "type": "architecture",
+  "difficulty": 3,
+  "q": "Design retrieval for a 200k-document legal assistant where wrong answers are expensive.",
+  "answer": "Ingestion: extract text (PDFs are hostile - layout junk, tables), structure-aware chunking with overlap, embed, index with rich payloads: doc_id, section, date, jurisdiction, matter and tenant. Metadata is not optional here - lawyers filter by date and jurisdiction before relevance even matters.\n\nQuery path: hybrid BM25 + vector fused with RRF (legal is full of exact terms and citations that embeddings fumble), retrieve about 20 wide, cross-encoder rerank to 5 sharp, then pack with provenance labels. Generation under a strict grounding contract: citations to chunk level, refusal when unsupported, and a confidence field. The rerank stage costs 100-300ms - in a high-stakes domain that trade is easy to defend.\n\nAround it: tenant/matter isolation enforced in the retriever, not the prompt; a gold set with unanswerable cases and eval thresholds gating every pipeline change; retrieval sets logged for auditability. Cost stays sane because retrieval is cheap - the LLM call dominates, so precision at k=5 is also the cost strategy.",
+  "followup": "Where exactly is tenant isolation enforced, and how do you prove it stays enforced?"
+ },
+ {
+  "id": "iv-rag-6",
+  "topic": "rag",
+  "type": "short",
+  "difficulty": 2,
+  "q": "When does query rewriting help retrieval, and how do you keep it honest?",
+  "answer": "Three cases earn it: vocabulary mismatch, where expansion bridges user phrasing to document phrasing; multi-part questions, where decomposition retrieves per sub-question instead of averaging them into one vague vector; and HyDE-lite, embedding a hypothetical answer instead of the question, since answers live closer to documents in embedding space than questions do.\n\nIt costs an extra LLM call and latency on every query, so it must pay rent: measure on your worst-performing gold queries and keep the rewriter only where the recall delta is real. Retrieval pipelines accumulate ritual steps nobody re-validated - don't contribute.",
+  "followup": null
+ },
+ {
+  "id": "iv-embeddings-1",
+  "topic": "embeddings",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "Cosine similarity - what does it measure, and why does everyone normalize then use dot product?",
+  "answer": "It measures the angle between two vectors, ignoring magnitude: 1 means same direction, near 0 unrelated, negative opposed. After L2-normalizing to unit length, the dot product equals cosine similarity - and dot products are what hardware and vector indexes compute fastest, so the convention is normalize once, then dot everywhere.",
+  "followup": null
+ },
+ {
+  "id": "iv-embeddings-2",
+  "topic": "embeddings",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Name three things embedding similarity is blind to, and what that implies for retrieval design.",
+  "answer": "Negation: 'profits rose' and 'profits fell' embed suspiciously close - same topic, opposite meaning. Exact identifiers: ticker codes, part numbers, names and precise figures barely move the vector, so 'ISIN GB0002374006' won't reliably beat generic finance text. Entity swaps: 'Alice sued Bob' versus 'Bob sued Alice' look nearly identical.\n\nImplication: embeddings retrieve by topic, not by logic or exactness. So production retrieval is hybrid - BM25 for exact-term queries, vectors for paraphrase, fused with RRF - plus reranking for precision. The fastest way to convince a sceptical team is a probe-pair table with real similarity scores.",
+  "followup": "Which of these failure modes does a cross-encoder reranker actually fix, and which does it not?"
+ },
+ {
+  "id": "iv-embeddings-3",
+  "topic": "embeddings",
+  "type": "short",
+  "difficulty": 2,
+  "q": "When do you graduate from numpy similarity search to a vector database, and what are you buying?",
+  "answer": "Numpy is genuinely fine surprisingly far: exact brute-force search over ~100k vectors is milliseconds, trivially debuggable, and has zero infrastructure. Prototype there so nothing is a black box.\n\nA vector DB buys you persistence (no re-embedding on restart), metadata-filtered search (tenant, doc_id, date alongside similarity - the feature that matters most in practice), concurrent access from multiple workers, and ANN indexes like HNSW that keep latency sub-linear into the millions of vectors. The tradeoff: ANN is approximate, so you trade a little exact recall for speed, and you've adopted an operational dependency. Choose it when scale, filters or multi-process access demand it - not because a tutorial did.",
+  "followup": null
+ },
+ {
+  "id": "iv-embeddings-4",
+  "topic": "embeddings",
+  "type": "coding",
+  "difficulty": 2,
+  "q": "Code top-k semantic search over 10k sentences from scratch. What are the steps and the key lines?",
+  "answer": "Embed the corpus once in batches, normalize, cache to disk; per query, embed with the SAME model, normalize, one matrix-vector product, take the top k.\n\nKey lines:\nE = embed(corpus)                       # (N, d)\nE = E / np.linalg.norm(E, axis=1, keepdims=True)\nq = embed([query])[0]; q = q / np.linalg.norm(q)\nscores = E @ q                          # cosine, since rows are unit-norm\nidx = np.argpartition(-scores, k)[:k]\nidx = idx[np.argsort(-scores[idx])]\nreturn [(corpus[i], float(scores[i])) for i in idx]\n\nargpartition is the small flourish - O(N) selection instead of a full sort. The two correctness traps: forgetting to normalize (dot then isn't cosine) and embedding queries with a different model than the corpus, which silently returns garbage.",
+  "followup": "What changes when the corpus hits 10 million vectors?"
+ },
+ {
+  "id": "iv-embeddings-5",
+  "topic": "embeddings",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "After upgrading the embedding model, retrieval quality craters. What went wrong, and how should the upgrade have been run?",
+  "answer": "Almost certainly mixed spaces: new-model query vectors searching an index of old-model document vectors. Different models produce unrelated embedding spaces - even at identical dimensions the coordinates mean different things, so similarities are noise. Nothing errors; quality just quietly dies, which is what makes it nasty.\n\nThe correct rollout: re-embed the entire corpus into a NEW versioned collection, run the gold-set eval against both old and new indexes, and only cut queries over when the new one wins. Keep the old index for instant rollback (blue/green, but for indexes), invalidate any answer caches whose keys include the index version - which is why the version belongs in the cache key - and delete the old collection only after soak. The general rule: the embedding model is part of the index schema; changing it is a migration, not a config tweak.",
+  "followup": "How does your cache key design make this cutover safe automatically?"
+ },
+ {
+  "id": "iv-embeddings-6",
+  "topic": "embeddings",
+  "type": "short",
+  "difficulty": 3,
+  "q": "How do you decide whether embedding model A beats model B for your corpus?",
+  "answer": "Not by eyeballing demo queries. Build a gold set of query-to-expected-chunk pairs from real usage, index the same corpus under both models, and compare recall@k and MRR - sliced by query type, because model A can win on paraphrase queries while losing on exact-term ones, and the slice tells you whether the fix is a better model or hybrid search.\n\nThen weigh the boring factors that decide production fitness: cost per million tokens, latency, dimension size (storage and memory scale with it), and hosting - a local sentence-transformers model at zero marginal cost versus an API. Add probe pairs for known blind spots like negation. Decision rule: the cheapest model that clears your eval thresholds wins; paying for embedding quality your task can't use is charity to your vendor.",
+  "followup": null
+ },
+ {
+  "id": "iv-agents-1",
+  "topic": "agents",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "Walk the tool-calling loop - what happens between the model and your code?",
+  "answer": "You send the request with tool schemas. The model, instead of answering, returns a tool_use block - tool name plus arguments - with stop_reason tool_use. YOUR code validates and executes, then appends a tool_result message and calls the model again. That repeats - possibly with parallel tool calls per turn - until the model responds with plain text and an end_turn stop reason. The model never executes anything; it only asks.",
+  "followup": null
+ },
+ {
+  "id": "iv-agents-2",
+  "topic": "agents",
+  "type": "short",
+  "difficulty": 2,
+  "q": "When is a workflow the right call over an agent?",
+  "answer": "When the steps are known in advance, a fixed workflow - chain, router, parallel fan-out - wins on every operational axis: predictable latency and cost, testable stages, debuggable failures. An agent earns its keep only when the path is genuinely dynamic, progress is verifiable, and you can tolerate the autonomy tax: more spend, more latency, less predictability, and debugging that feels like anthropology.\n\nAnthropic's own guidance says most 'agent' products should be workflows, and my experience matches. The senior move in the interview is offering evidence: build both for the same task, run them on the same cases, and compare quality, cost and failure count. The workflow usually wins - and being able to say why is the point.",
+  "followup": "Give me a task where the agent genuinely wins, and what makes it agent-shaped."
+ },
+ {
+  "id": "iv-agents-3",
+  "topic": "agents",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Why are tool descriptions and tool results both 'prompts', and what does that change about how you write them?",
+  "answer": "The description is the model's only manual - it can't read your source. So it's written like documentation: what the tool does, when to use it (and when not to), argument constraints with enums where possible, and what comes back. Vague descriptions produce hallucinated arguments and misuse.\n\nResults steer the next decision just as much. Return an explicit {status: 'not_found'} rather than an empty list the model can dress up as an answer; return machine-usable errors ('date must be ISO-8601, got 03/04/2025') so the model can self-correct on the next call. A surprising fraction of 'agent is dumb' bugs are actually interface-design bugs on your side of the loop.",
+  "followup": null
+ },
+ {
+  "id": "iv-agents-4",
+  "topic": "agents",
+  "type": "coding",
+  "difficulty": 3,
+  "q": "Write the core agent loop. What are the essential lines and guards?",
+  "answer": "It's about 40 lines, and owning it beats importing it:\n\nfor _ in range(MAX_STEPS):\n  resp = client.messages.create(model=MODEL, messages=msgs, tools=TOOLS)\n  msgs.append({'role': 'assistant', 'content': resp.content})   # the forgotten line\n  if resp.stop_reason == 'tool_use':\n    results = []\n    for block in resp.content:\n      if block.type == 'tool_use':\n        args = validate(block.name, block.input)   # Pydantic, before execution\n        results.append(tool_result(block.id, execute(block.name, args)))\n    msgs.append({'role': 'user', 'content': results})\n  else:\n    return extract_text(resp)\nraise AgentBudgetExceeded(transcript=msgs)\n\nGuards that make it production-shaped: MAX_STEPS and a per-run cost cap; argument validation before execution; a tool allowlist per task; repeated-identical-call detection; and the full transcript logged, because the transcript IS the debugging artifact - and the state, if you want resumability.",
+  "followup": "Where do approval gates slot into this loop?"
+ },
+ {
+  "id": "iv-agents-5",
+  "topic": "agents",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "Your agent burns its budget re-reading the same file in a loop. Diagnose and fix.",
+  "answer": "The transcript shows identical tool calls with identical results - the model isn't gaining information, so nothing pushes it toward termination. Agents fail as systems: loop, prompt, tools and model together, so the fix is layered.\n\nStop the bleeding first: max_steps and a per-run cost cap, so the failure costs cents, not dollars. Then detect the pattern: on a repeated identical call, don't re-execute - inject a nudge as the tool result: 'You already read this file; use what you have or try a different tool.' Then prevent: a clearer termination instruction ('when you have enough to answer, answer'), and richer tool results, since thin results are often why the model keeps fishing.\n\nAfterwards, this becomes an eval case - loops you've seen once should be regression-tested like any other bug.",
+  "followup": null
+ },
+ {
+  "id": "iv-agents-6",
+  "topic": "agents",
+  "type": "short",
+  "difficulty": 1,
+  "q": "What is an approval gate, and which actions belong behind one?",
+  "answer": "A pause before consequential actions: the agent proposes, a human disposes. Anything irreversible or externally visible gates - writing files, sending messages, deleting data, spending money - while read-only tools flow freely, or the agent becomes useless.\n\nDesign details that matter: show the human the concrete plan or diff, not a vague intention; and on denial, feed the reason back into the transcript so the model can replan instead of retrying the same action blindly.",
+  "followup": null
+ },
+ {
+  "id": "iv-evals-1",
+  "topic": "evals",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "recall@k and MRR - what does each tell you?",
+  "answer": "recall@k: for what fraction of gold queries does at least one expected source appear in the top k retrieved - did we find it at all? MRR: the mean of 1/rank of the first correct result - how high does it land? recall@5 of 0.9 with MRR of 0.4 reads as: usually present, but sitting at position 2-3 instead of the top, which matters once you pack only a few chunks.",
+  "followup": null
+ },
+ {
+  "id": "iv-evals-2",
+  "topic": "evals",
+  "type": "short",
+  "difficulty": 1,
+  "q": "What makes a gold dataset actually good?",
+  "answer": "Drawn from real usage and the real corpus, not invented trivia. Expected answers a domain expert would sign off. Expected source ids, so retrieval can be scored separately from generation. Difficulty tags and paraphrase variants - same fact, different words - so you measure robustness, not memorized phrasing. And crucially, unanswerable questions with refusal as the expected behavior, because honesty is a feature you test.\n\nSize matters less than people think: 25-40 well-made cases beat zero perfect ones, and the set grows from error analysis - every production failure becomes a case. Version-control it; it's the most valuable file in the repo.",
+  "followup": null
+ },
+ {
+  "id": "iv-evals-3",
+  "topic": "evals",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Why run retrieval evals before answer evals?",
+  "answer": "Retrieval metrics are cheap, deterministic and fast: recall@k and MRR need zero LLM calls, run in seconds, and never flake - so you iterate on retrieval at the speed of a unit test. Answer evals need an LLM judge: slower, noisier, and they cost money per run.\n\nThere's also a causal argument: retrieval bounds everything downstream. If the right chunk isn't in the context, no prompt engineering can save the answer - the generator can only lose information, never conjure it. So debug the pipeline in dependency order: retrieval first, packing second, generation last.",
+  "followup": null
+ },
+ {
+  "id": "iv-evals-4",
+  "topic": "evals",
+  "type": "short",
+  "difficulty": 2,
+  "q": "You're using an LLM as a judge. What biases do you defend against, and how do you know you can trust it?",
+  "answer": "The documented ones: position bias (favors the first answer in a comparison - so randomize order), verbosity bias (longer reads as better), self-preference (favors outputs in its own style), and sycophancy toward confident tone. A judge scoring 'sounds good' instead of 'is grounded' is the default failure.\n\nDefenses: a concrete rubric, structured verdicts like {score, unsupported_claims[]} rather than a bare number, and requiring quoted evidence per claim. Trust is earned by calibration: hand-label 10-20 outputs first, run the judge on the same set, and measure agreement. Above ~85-90% you can let a cheap model judge iteration runs; below it, fix the rubric before trusting any of its numbers. Judges need evals too.",
+  "followup": "Your judge agrees with your labels only 60% of the time - what do you change first?"
+ },
+ {
+  "id": "iv-evals-5",
+  "topic": "evals",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "The judge scores a fluent answer 9/10, but it contains a number that appears nowhere in the retrieved context. Fix the judge.",
+  "answer": "Classic verbosity-and-confidence bias: style leaked into a groundedness score. The fix is structural, not a sterner adjective in the rubric.\n\nMake the judge cite its work: for each factual claim, require a supporting quote from the provided context; claims without a quote are counted unsupported, and any unsupported numeric claim caps the groundedness score hard. Split the dimensions - groundedness, correctness-vs-gold, and style get separate scores, so fluency can no longer subsidize fabrication. Then re-calibrate against hand labels, with this failing case added to the judge's own regression set.\n\nThe meta-lesson: a judge is a model-shaped component like any other. It ships with tests, gets calibrated, and earns trust with agreement numbers - or it's just vibes with a rubric.",
+  "followup": null
+ },
+ {
+  "id": "iv-evals-6",
+  "topic": "evals",
+  "type": "short",
+  "difficulty": 3,
+  "q": "How do evals become a regression gate rather than a report nobody reads?",
+  "answer": "Treat them exactly like tests. One command - run_evals - produces results.jsonl plus a summary, and thresholds are assertions that fail the run: recall@5 >= 0.8, groundedness >= 0.9. Temperature 0 and pinned seeds where the API allows, so failures mean regressions, not noise.\n\nCost discipline makes it sustainable: a sampled 5-case smoke with a spend cap runs on every PR in CI; the full set runs before release. Results append to a history file so drift is visible across weeks, not just versus yesterday. And every failed gate triggers the error-analysis ritual: read the five worst transcripts, tag the failure category - retrieval miss, packing, hallucination, refusal miss, or gold-set wrong - and fix the category, not the case. That last discipline is what separates eval culture from eval theatre.",
+  "followup": null
+ },
+ {
+  "id": "iv-databases-1",
+  "topic": "databases",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "What is the N+1 query problem?",
+  "answer": "One query fetches N rows, then a loop issues one more query per row - N+1 round trips where one or two would do. ORMs cause it silently via lazy-loaded relationships: touching document.chunks inside a loop fires a query per document. The tell is a log full of near-identical queries and a page that slows linearly with row count; the fix is eager loading (selectinload/joinedload in SQLAlchemy) or restructuring into a join.",
+  "followup": "How would you catch this in development before users do?"
+ },
+ {
+  "id": "iv-databases-2",
+  "topic": "databases",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Why must heavy work never happen inside a request handler, and what replaces it?",
+  "answer": "Handlers must answer in milliseconds. A 90-second PDF ingestion inside one hits client and proxy timeouts, gives no progress signal, dies invisibly on deploys - and when the client times out and retries, you're now doing the heavy work twice.\n\nThe replacement is a queue: the endpoint validates, enqueues, and returns 202 with a job_id immediately; a worker (arq on Redis, for the async stack) does the real work; a status endpoint or webhook reports progress. Job design has its own rules: small payloads - ids and references, never blobs; retries with backoff; explicit timeouts; and idempotency, because queues deliver at-least-once.",
+  "followup": "What changes for the client - how do they learn the job finished?"
+ },
+ {
+  "id": "iv-databases-3",
+  "topic": "databases",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Design the cache key for caching LLM answers in a RAG system.",
+  "answer": "The rule: the key encodes everything the answer depends on. For RAG that's the model id, the prompt/template version, the normalized query, the index or corpus version, retrieval config like k, and the tenant. Something like hash(model + prompt_v + tenant + index_v + norm(query)).\n\nMiss any dependency and you serve wrong answers with a straight face - the classic being an index re-ingestion that leaves stale answers cached because the key ignored corpus version. TTL is the backstop, not the strategy: explicit invalidation - bump the index version on ingest completion - is what actually keeps answers current. And instrument the hit rate, because an invisible cache is an unmeasured cost lever.",
+  "followup": "Why does tenant belong in the key even though two tenants rarely ask identical questions?"
+ },
+ {
+  "id": "iv-databases-4",
+  "topic": "databases",
+  "type": "coding",
+  "difficulty": 3,
+  "q": "The same document gets enqueued twice. Show how you guarantee it's processed once.",
+  "answer": "At-least-once delivery means dedupe is my job, not the queue's. Two layers:\n\nLayer 1, a claim guard keyed on content:\nh = sha256(doc_bytes).hexdigest()\nclaimed = redis.set('ingest:' + h, job_id, nx=True, ex=86400)\nif not claimed:\n    return   # someone owns it - skip\n\nSET NX EX is atomic: exactly one worker wins the race, and the TTL stops a crashed worker from blocking the document forever.\n\nLayer 2, idempotent work anyway: check-before-work (is this doc already indexed at this version?) and upsert instead of insert, so even a re-run after a crash-after-claim converges to the same end state instead of duplicating chunks. The TTL expiry is exactly why layer 2 must exist.\n\nThen the invariant becomes a test: enqueue the same doc twice, assert one set of chunks. That test outlives every refactor.",
+  "followup": "The worker crashes after claiming but before finishing - walk through what happens."
+ },
+ {
+  "id": "iv-databases-5",
+  "topic": "databases",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "Users report getting yesterday's answers after documents were re-indexed overnight. Walk through it.",
+  "answer": "Smells like the answer cache surviving a re-index: the cache key doesn't include the index version, so the same query hashes to the same key and returns the pre-ingestion answer. Confirm from logs - cache hits on the affected queries, and key construction that never mentions the corpus.\n\nFix in three moves: include the index/corpus version in the key (or use it as a namespace prefix), bump that version atomically when ingestion completes, and - because old keys are now unreachable garbage rather than wrong answers - let TTLs sweep them out. Namespacing beats trying to enumerate and delete stale keys, which always misses some.\n\nThen make it visible: hit-rate and answer-age metrics, and a test that re-indexes a fixture corpus and asserts the next query misses the cache. Cache keys encode every dependency of the value - the two-hard-things joke earns its tenure here.",
+  "followup": null
+ },
+ {
+  "id": "iv-databases-6",
+  "topic": "databases",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Why do schema migrations exist when you could just ALTER TABLE by hand?",
+  "answer": "Hand-edits die at the second environment or the second engineer: nobody knows what was run where, staging drifts from prod, and a fresh developer database can't be built from scratch. Migrations (Alembic in the SQLAlchemy world) make schema change code: ordered, reviewable, reproducible in every environment, with a downgrade path for rollbacks.\n\nTwo professional habits on top: always review autogenerated migrations - autogenerate lies about renames, seeing a drop-and-create instead - and keep migrations backwards-compatible with running code during deploys (expand, migrate, contract), so old code and new schema coexist mid-rollout.",
+  "followup": null
+ },
+ {
+  "id": "iv-system-design-1",
+  "topic": "system-design",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "The four golden signals - name them and map them onto an LLM service.",
+  "answer": "Latency, traffic, errors, saturation. For an LLM service: latency splits into TTFT and total, tracked at p95 because means lie; traffic is requests plus tokens per minute, since tokens are the real capacity unit; errors include 4xx/5xx but also refusals and malformed-output rate; saturation is queue depth, worker utilization and rate-limit headroom at your provider.",
+  "followup": null
+ },
+ {
+  "id": "iv-system-design-2",
+  "topic": "system-design",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Walk me through your method when you get an AI system design question.",
+  "answer": "Requirements first, and out loud: users and usage pattern, volume, latency tolerance, cost tolerance, data sources and freshness, failure cost. Then napkin math before boxes - queries per second, tokens per day, storage - because the numbers decide the architecture, not the other way round.\n\nThen data flow end to end, components as they earn their place (API, queue and workers for heavy work, Postgres for state, Redis for cache and limits, vector store, LLM layer with fallbacks), then failure modes - what happens when the LLM times out, the provider is down, a document is poisoned - and finally cost per query with the main lever named. The discipline interviewers reward: tradeoffs stated aloud, and no component without a reason.",
+  "followup": null
+ },
+ {
+  "id": "iv-system-design-3",
+  "topic": "system-design",
+  "type": "short",
+  "difficulty": 2,
+  "q": "What is a timeout budget, and why is it designed top-down?",
+  "answer": "The caller's deadline is a budget everything inside must fit: if the client gives up at 10s, then retrieval (300ms) + rerank (200ms) + LLM call (6s) + one retry's headroom must sum inside it. Design it top-down because inner timeouts longer than outer ones produce pure waste - the server grinding on work whose client already left, retries stacked on abandoned requests.\n\nTwo corollaries: every hop's timeout must be shorter than its caller's, with retry multiplication accounted for; and when work genuinely can't fit the budget, the answer is architectural - respond fast with a job id and finish async - not a bigger number in the config.",
+  "followup": "Where do retries fit inside the budget arithmetic?"
+ },
+ {
+  "id": "iv-system-design-4",
+  "topic": "system-design",
+  "type": "architecture",
+  "difficulty": 3,
+  "q": "Design an AI email assistant for 10k users - sketch it end to end.",
+  "answer": "Napkin first: 10k users x ~20 assisted emails/day = 200k generations; at roughly 2k input + 500 output tokens each, ~500M tokens/day. At frontier prices that's thousands of dollars a day; at mid-tier, hundreds. Conclusion before any boxes: model routing and caching are load-bearing, not optimizations.\n\nFlow: mail provider pushes via webhook - verify HMAC, dedupe by event id, enqueue, return 200 fast. Workers classify (cheap model), then draft with context from calendar/CRM tools (better model), stream drafts to the UI for perceived speed. Postgres for state and per-user cost ledger; Redis for cache, rate limits and idempotency. A human approves every send - an email assistant that auto-sends is a resignation letter generator - and drafts above a risk threshold get stricter review.\n\nFailure modes: provider outage -> circuit breaker, fallback model, degrade to 'no draft, here's the thread summary' honestly; inbound email is untrusted content -> indirect injection is THE threat, so treat message bodies as data, never instructions, and gate all tool-triggered actions. Evals: a gold set of email scenarios scoring draft quality and tone, run before any prompt or model change ships.",
+  "followup": "Where is the single riskiest data path in this design?"
+ },
+ {
+  "id": "iv-system-design-5",
+  "topic": "system-design",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "Your LLM provider returns 'overloaded' errors for 20 minutes. What should your system already have in place?",
+  "answer": "The wrong answer is 'retry harder' - naive synchronized retries triple traffic into a struggling dependency and convert their blip into your outage.\n\nWhat should exist beforehand: retries with exponential backoff, jitter, a cap on total attempts, and honoring Retry-After. A circuit breaker per provider - closed, open, half-open - so after a failure threshold you fail fast instead of queueing doomed calls. A fallback ladder: secondary model or provider, then cached or simpler responses, then an honest degraded message; each rung cheaper and dumber, none of them silent failure. Queue-buffered ingestion rides it out by simply processing later - one of the quiet arguments for queues. And observability that pages you with the provider named, not just 'errors up'.\n\nThe 20-minute outage is a scheduled exam: systems that pass designed for it months earlier.",
+  "followup": null
+ },
+ {
+  "id": "iv-system-design-6",
+  "topic": "system-design",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Estimate cost per query for a RAG service, and name the lever that matters most.",
+  "answer": "Decompose: query embedding (fractions of a cent - ignore), optional managed rerank, and the LLM call, which dominates. Worked example: pack 5 chunks plus system prompt, ~3k input tokens at $3/M = $0.009; ~300 output tokens at $15/M = $0.0045. Call it ~1.4 cents per query; at 10k queries/day, ~$135/day, ~$4k/month.\n\nBiggest lever: input size - packed context times model tier. Halving packed tokens or dropping a model tier halves the bill; prompt caching the stable prefix cuts the input side further. State assumptions and give a range - false precision in cost estimates is how consultants lose trust; being within 2x with named assumptions is how they keep it.",
+  "followup": null
+ },
+ {
+  "id": "iv-debugging-1",
+  "topic": "debugging",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "You get a 200-line traceback. Where do you look first?",
+  "answer": "Bottom first: the last frame is the raise site, and the exception type plus message is half the diagnosis. Then walk upward to the first frame in YOUR code - the middle is usually library plumbing. Then check for chained sections: 'The above exception was the direct cause' points at the true root cause, which may be several exceptions up the chain from the one that surfaced.",
+  "followup": null
+ },
+ {
+  "id": "iv-debugging-2",
+  "topic": "debugging",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Debugger, logs, tests - when do you reach for each?",
+  "answer": "Debugger for local, reproducible mysteries: breakpoint(), inspect live state, walk frames with u/d, pytest --pdb to post-mortem a failing test. It answers 'what is actually in this variable?' faster than any print.\n\nLogs for production and distributed problems where you can't attach: timing, frequency, correlation across services - provided you invested in structure and request ids beforehand. Tests to pin the bug: write the failing test first, fix until green, and the regression can never return unnoticed.\n\nThe anti-patterns are using each where another belongs: print-debugging in a loop that one breakpoint would solve, or redeploying prints into prod because there was no logging discipline.",
+  "followup": null
+ },
+ {
+  "id": "iv-debugging-3",
+  "topic": "debugging",
+  "type": "short",
+  "difficulty": 2,
+  "q": "A request flows through API, queue, worker and two downstream calls. How do you make that debuggable before anything breaks?",
+  "answer": "Correlation ids and structure. Generate a request_id at the edge (middleware), return it in a response header, and propagate it everywhere - downstream request headers AND job payloads, because the queue hop is where correlation usually dies. Every log line is structured JSON carrying that id, so one grep reconstructs the whole journey.\n\nAdd spans with timings per stage - OpenTelemetry or a lighter tool like Logfire - so a slow request decomposes into API 40ms, retrieval 120ms, LLM 2.1s at a glance. Log at boundaries: input summaries, durations, error context. Never log secrets or raw PII - prompt hashes and truncated summaries, not full prompts.",
+  "followup": "Why do job payloads specifically need to carry the request id?"
+ },
+ {
+  "id": "iv-debugging-4",
+  "topic": "debugging",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "An async FastAPI service handles requests one at a time under load. How do you find and fix it?",
+  "answer": "Signature of a blocked event loop: unrelated endpoints slow down together and concurrency collapses to one, because a single thread runs all coroutines and something isn't yielding.\n\nFinding it: look for sync calls inside async def - time.sleep, the requests library, a sync database driver, heavy CPU (a giant json.loads, PDF parsing). py-spy dump on the live process shows exactly where the loop is stuck; asyncio debug mode logs slow callbacks. In review, 'async def' containing no await is a red flag.\n\nFixes by cause: asyncio.sleep for sleeps; httpx.AsyncClient for HTTP; an async driver for the DB; and for genuinely blocking or CPU work, push it off the loop - run_in_executor, or in FastAPI simply declare the handler def instead of async def so it runs in the threadpool. The mental model that prevents the whole class: the loop is one thread doing cooperative waiting, and cooperation is voluntary.",
+  "followup": "Why does declaring the handler as plain def also fix it in FastAPI?"
+ },
+ {
+  "id": "iv-debugging-5",
+  "topic": "debugging",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "03:07 - your LLM provider blips for 60 seconds. 03:09 - your outbound traffic has tripled and everything is melting. Read the timeline.",
+  "answer": "A retry storm. The blip failed hundreds of in-flight calls at once; every client retried on the same exponential schedule with no jitter, so the retries arrived as synchronized waves. Worse, retries lived at multiple layers - SDK, service, upstream caller - and layers multiply: 3 attempts x 3 attempts is 9 calls per original request. The provider rate-limits the flood, 429s trigger more retries, and a 60-second blip becomes a half-hour incident.\n\nFixes: jitter on every backoff (spread the waves), cap total attempts, retry at ONE designated layer only, honor Retry-After, and a circuit breaker so persistent failure fails fast instead of queueing doom. Load-shed at the edge with quick 503s rather than letting queues balloon. The lesson that generalizes: retries are load amplification, and amplifying load at a struggling dependency is how blips become outages.",
+  "followup": null
+ },
+ {
+  "id": "iv-debugging-6",
+  "topic": "debugging",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Every log line in the service appears twice. What's going on?",
+  "answer": "Two handlers are seeing each record. Usual causes: a handler added in a module AND basicConfig at the entrypoint; a module that adds a handler every time it's imported or reloaded; or a handler attached to a child logger while records also propagate up to a root handler - propagation sends records up the logger tree, it doesn't stop at the first handler.\n\nThe discipline that ends it: configure logging exactly once, at the entrypoint; library and module code calls getLogger(__name__) and attaches nothing. If a child logger must own its output, set propagate=False deliberately. Duplicate lines are cosmetic; triple-counted error metrics from the same bug are not.",
+  "followup": null
+ },
+ {
+  "id": "iv-security-1",
+  "topic": "security",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "Direct versus indirect prompt injection - which one keeps RAG engineers up at night?",
+  "answer": "Direct: the attacker types malicious instructions into your input box. Indirect: the instructions hide inside content your system ingests - a retrieved document, a tool result, an inbound email - and fire when a model reads them. Indirect is the RAG and agent nightmare, because the attacker never touches your app; they just need to get one document into something you'll index or fetch.",
+  "followup": null
+ },
+ {
+  "id": "iv-security-2",
+  "topic": "security",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Why is 'we instruct the model not to reveal other customers' data' an unacceptable security answer?",
+  "answer": "Because a prompt is advisory, probabilistic, and sits in the same channel as attacker-controlled content - the exact channel injection attacks own. It is not an enforcement boundary; it's a polite request that usually gets honored.\n\nEnforcement lives below the model: tenant filters in the retriever and queries, authorization checks in code, allowlists on tools. The design goal is that the model never sees data it isn't allowed to leak - then no injection, jailbreak or bad day can exfiltrate it. Prompt-level rules are fine as defence-in-depth garnish; the moment they're the wall, you don't have one.",
+  "followup": null
+ },
+ {
+  "id": "iv-security-3",
+  "topic": "security",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Your assistant ingests customer-supplied documents. What layered injection mitigations do you ship, and what do you tell stakeholders about residual risk?",
+  "answer": "Layers, because no single one holds: provenance delimiters wrapping untrusted content, with a system-prompt contract that delimited content is data to analyse, never instructions to follow; least-privilege tools with allowlists per task, so a compromised generation has minimal blast radius; approval gates on consequential actions; output checks for policy violations and unexpected actions; and no secrets in context - the model can't leak what it never saw.\n\nTo stakeholders, the honest 2026 position: prompt injection has no complete fix; mitigation is layered risk reduction, and the residual risk gets documented, not hidden. That honesty is what separates a defensible security posture from a demo with a disclaimer.",
+  "followup": "Which single layer would you defend as most load-bearing, and why?"
+ },
+ {
+  "id": "iv-security-4",
+  "topic": "security",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "Your support assistant quotes another customer's contract in a reply. Incident review: root cause and fix?",
+  "answer": "The classic cross-tenant leak. Root cause is almost always that retrieval ran unscoped: the user authenticated fine, but the vector search had no tenant filter - authentication at the API layer without authorization at the data layer. Any customer's question can then surface any customer's chunks, and the model helpfully cites them.\n\nFix at the data layer: tenant_id on every table, vector payload and cache key; the retriever applies the tenant filter unconditionally - server-side, from the authenticated context, never from anything the model or user supplies, and never via prompt instructions. Then sweep every read path, because search, caches, and eval scripts each leak independently. Ship a permanent isolation test - user A queries for user B's known document and must get nothing - plus incident hygiene: audit logs to size the exposure window, disclosure per contract, and the test wired into CI so the regression is impossible to ship quietly.",
+  "followup": "Which other paths besides the main search endpoint could leak cross-tenant data?"
+ },
+ {
+  "id": "iv-security-5",
+  "topic": "security",
+  "type": "short",
+  "difficulty": 3,
+  "q": "What's your secrets and PII hygiene checklist for an LLM service?",
+  "answer": "Secrets: environment or secret manager only - never in code, git history, logs or prompts; SecretStr-style types so accidental repr doesn't print them; constant-time comparison for API keys; rotation-ready (no key baked into an image); and a CI grep-audit so a leaked key fails the build before it ships.\n\nPII: minimize what you collect and what enters prompts; redact before logging - a regex pass for emails, cards and ids plus judgment for the rest; log prompt hashes or truncated summaries, never full raw prompts; retention limits so old transcripts age out; and no PII to third-party model APIs without the data-processing agreement that covers it. The theme interviewers listen for: data you never stored or sent is data you can't leak.",
+  "followup": null
+ },
+ {
+  "id": "iv-security-6",
+  "topic": "security",
+  "type": "short",
+  "difficulty": 2,
+  "q": "Pick three OWASP LLM Top 10 items and tell me what you actually do about each.",
+  "answer": "LLM01 Prompt Injection: layered mitigations - provenance delimiters, data-not-instructions contract, tool least-privilege, approval gates - and documented residual risk. LLM02 Sensitive Information Disclosure: authorization enforced at the data layer with tenant filters, PII redaction before logging, and context minimization so the model only sees what the requester may see. LLM06 Excessive Agency: the agent gets the narrowest toolset for the task, argument validation before execution, cost caps, and human approval on irreversible actions.\n\nThe list's real value is as a pre-launch review checklist: walk your architecture against all ten and write down where you stand - it turns 'we think it's safe' into a document a client can challenge.",
+  "followup": null
+ },
+ {
+  "id": "iv-deployment-1",
+  "topic": "deployment",
+  "type": "flash",
+  "difficulty": 1,
+  "q": "Why do Dockerfiles copy the dependency manifest and install before copying the source code?",
+  "answer": "Layer caching. Each instruction creates a cached layer, invalidated top-down when its inputs change. Dependencies change weekly; code changes hourly. With deps installed in an early layer keyed only on the lockfile, a code edit rebuilds just the final copy layer - seconds instead of a full reinstall. Same logic makes .dockerignore matter: junk in the build context invalidates caches and bloats images.",
+  "followup": null
+ },
+ {
+  "id": "iv-deployment-2",
+  "topic": "deployment",
+  "type": "short",
+  "difficulty": 2,
+  "q": "What do multi-stage builds and a non-root user buy you?",
+  "answer": "Multi-stage: build in a fat stage - compilers, uv, dev dependencies - then copy only the application and its virtualenv into a slim runtime stage. Result: a smaller image that pulls and cold-starts faster, and a smaller attack surface, because a runtime image without build tools, package managers and shells full of utilities gives an intruder less to work with.\n\nNon-root USER: if the app is compromised, the process can't touch the container's system files, and container-escape exploits start from a worse position. Both cost five lines and are the first things a security review checks - cheap signals that you've shipped before.",
+  "followup": null
+ },
+ {
+  "id": "iv-deployment-3",
+  "topic": "deployment",
+  "type": "short",
+  "difficulty": 2,
+  "q": "What does CI run on every PR for an AI service, and how do you keep it fast and cheap?",
+  "answer": "The deterministic tier runs always: ruff lint and format check, the full pytest suite with every LLM call mocked (fixtures include malformed outputs, so repair paths are exercised offline), and an image build. Fast via dependency caching - uv makes this nearly free.\n\nThe probabilistic tier is budgeted: a small eval smoke - say 5 gold cases at temperature 0 with an explicit cost cap - using API keys from CI secrets, with a spend guard so a bug can't burn the budget. The full eval set runs before release, not per PR: per-PR full evals are slow, flaky and expensive, which is how eval gates get deleted. Branch protection makes the green checks mandatory - a gate you can merge past is decoration.",
+  "followup": "Why run evals in CI at all if the unit tests all pass?"
+ },
+ {
+  "id": "iv-deployment-4",
+  "topic": "deployment",
+  "type": "scenario",
+  "difficulty": 3,
+  "q": "The container runs fine locally, but on the platform it deploys, gets killed, and restarts forever. Debug it.",
+  "answer": "A restart loop means the platform thinks the app is unhealthy - read its events and the first 50 log lines, which usually name the killer.\n\nThe usual suspects, in the order I check: health check misconfigured - wrong path or port, so a healthy app looks dead and gets cycled; the app bound to 127.0.0.1 instead of 0.0.0.0, or ignoring the platform's PORT env var - reachable from inside, invisible to the health checker; missing env vars crashing startup - this is where fail-fast Settings validation pays, because the log says exactly which key is absent instead of a NoneType error 200 lines in; OOM - the platform's memory limit is smaller than your laptop's, and ML dependencies are heavy; or a slow start - model downloads, migrations - exceeding the startup grace period.\n\nReproduce with docker run plus the platform's env and memory limits locally, fix, then codify: a healthcheck in compose so the config is tested every day, and startup logging that prints the loaded (non-secret) config.",
+  "followup": null
+ },
+ {
+  "id": "iv-deployment-5",
+  "topic": "deployment",
+  "type": "short",
+  "difficulty": 3,
+  "q": "Describe your rollback story on a PaaS. What makes it trustworthy?",
+  "answer": "Three properties. Immutable, versioned images: every commit builds an image; deploy means pointing at a new image, rollback means pointing back at the previous one - no rebuild, no drift, and config lives in env vars (12-factor) so the same image runs everywhere.\n\nHealth-gated cutover: the platform only shifts traffic when the new instance passes its health check, so the broken deploy never takes traffic and 'rollback' is often automatic non-promotion.\n\nAnd the part everyone forgets - migrations: rollback is only safe if the previous code runs against the current schema, which means backwards-compatible migrations (expand, migrate, contract) and never destructive changes in the same release as the code that stops needing them. A rollback that requires a down-migration under incident pressure is not a rollback plan; it's a second incident.",
+  "followup": null
+ },
+ {
+  "id": "iv-deployment-6",
+  "topic": "deployment",
+  "type": "coding",
+  "difficulty": 2,
+  "q": "Sketch the GitHub Actions workflow for lint, tests and an eval smoke.",
+  "answer": "One workflow, triggered on pull_request, two jobs.\n\nTest job steps:\n- uses: actions/checkout\n- uses: astral-sh/setup-uv with caching enabled (keyed on uv.lock)\n- run: uv sync\n- run: uv run ruff check . and uv run ruff format --check .\n- run: uv run pytest -q   (fully offline - LLM SDK mocked)\n\nEval-smoke job, after tests:\n- run: uv run python run_evals.py --sample 5 --max-cost 0.50\n- the API key comes from repository secrets into env - never echoed, never in the log\n- the script enforces the spend cap itself and exits non-zero on threshold breach, so a quality regression fails the check like any test\n\nThen branch protection requires both jobs. Two habits worth mentioning: open one deliberately-failing PR to prove the gate actually blocks, and keep the smoke sampled and cost-capped so nobody is ever tempted to delete it for being slow or expensive.",
+  "followup": null
+ }
+]

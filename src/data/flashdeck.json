@@ -1,0 +1,362 @@
+[
+ {
+  "id": "fc-1",
+  "topic": "python",
+  "front": "raise NewError(...) from err - what does it do?",
+  "back": "Chains err as the new exception's __cause__, so the traceback shows the low-level root cause under 'the direct cause of' your domain error. Raising without 'from' loses or muddles the root cause."
+ },
+ {
+  "id": "fc-2",
+  "topic": "python",
+  "front": "EAFP vs LBYL?",
+  "back": "Easier to Ask Forgiveness than Permission: try the operation and catch the specific exception, instead of pre-checking conditions (Look Before You Leap). Pythonic because pre-checks race and duplicate logic."
+ },
+ {
+  "id": "fc-3",
+  "topic": "python",
+  "front": "Why doesn't asyncio speed up CPU-bound code?",
+  "back": "The event loop is one thread that only switches at await points; CPU work never yields, so nothing overlaps and everything else stalls behind it. Async overlaps waiting, not computing - use processes for CPU."
+ },
+ {
+  "id": "fc-4",
+  "topic": "python",
+  "front": "Validate at the boundary - the principle?",
+  "back": "Parse and validate untrusted input once at the edge (Pydantic), then pass typed, trusted objects internally (dataclasses). Inside the boundary, types are guarantees, not hopes."
+ },
+ {
+  "id": "fc-5",
+  "topic": "python",
+  "front": "Mocking rule: where do you patch?",
+  "back": "Where the name is USED, not where it's defined: patch myapp.fetcher.get, not httpx.get, because the module under test holds its own reference. Patching the wrong path gives green tests and broken prod."
+ },
+ {
+  "id": "fc-6",
+  "topic": "apis",
+  "front": "401 vs 403?",
+  "back": "401 Unauthorized: not authenticated - 'who are you?'. 403 Forbidden: authenticated but not allowed - 'I know who you are, and no'."
+ },
+ {
+  "id": "fc-7",
+  "topic": "apis",
+  "front": "Which status code for rate limiting, and which header goes with it?",
+  "back": "429 Too Many Requests, with a Retry-After header saying when to come back. Well-behaved clients honor it and back off with jitter."
+ },
+ {
+  "id": "fc-8",
+  "topic": "apis",
+  "front": "Idempotent method - definition, and which HTTP methods qualify?",
+  "back": "Repeating the request has the same effect as sending it once. GET, PUT and DELETE are idempotent by contract; POST is not - which is why retrying a create needs an idempotency key."
+ },
+ {
+  "id": "fc-9",
+  "topic": "apis",
+  "front": "Idempotency key flow (the Stripe pattern)?",
+  "back": "Client sends a unique key per logical operation in a header; the server stores the first response under that key and replays it for any retry instead of re-executing. Same key + different payload = 409."
+ },
+ {
+  "id": "fc-10",
+  "topic": "apis",
+  "front": "Webhook verification: the four steps?",
+  "back": "Verify the HMAC signature with the shared secret, reject stale timestamps (replay window), dedupe by event id, respond 2xx fast and enqueue the real processing for a worker."
+ },
+ {
+  "id": "fc-11",
+  "topic": "llms",
+  "front": "What does TTFT measure, and why does it matter?",
+  "back": "Time to first token - how long the user stares at nothing. Streaming makes an 8-second answer feel fast because TTFT is sub-second; track p95 TTFT and total latency as separate metrics."
+ },
+ {
+  "id": "fc-12",
+  "topic": "llms",
+  "front": "Temperature: when 0, when ~1?",
+  "back": "0 for extraction, classification and eval runs - near-deterministic sampling. Around 1 for ideation and varied prose. It scales randomness; it does not make facts more correct."
+ },
+ {
+  "id": "fc-13",
+  "topic": "llms",
+  "front": "Cache breakpoints: what goes before one, and what's the pricing shape?",
+  "back": "The long byte-stable prefix (system contract, tool defs, shared context) goes before the breakpoint; volatile content after. Cache writes cost a premium (~1.25x input), reads ~0.1x - so it pays when the prefix repeats within the TTL."
+ },
+ {
+  "id": "fc-14",
+  "topic": "llms",
+  "front": "Context window: what counts against it?",
+  "back": "Input AND output tokens share the one budget. Overflow means truncation or a hard error - and even inside the limit, long context costs linearly in money and latency."
+ },
+ {
+  "id": "fc-15",
+  "topic": "llms",
+  "front": "Cost of one LLM call - the formula?",
+  "back": "(input_tokens / 1M x input_price) + (output_tokens / 1M x output_price). Example: 3k in at $3/M plus 300 out at $15/M is about 1.4 cents."
+ },
+ {
+  "id": "fc-16",
+  "topic": "rag",
+  "front": "Chunk overlap: why have it?",
+  "back": "So a fact spanning a boundary ('revenue grew' / '23% in Q3') survives intact in at least one chunk. A little index redundancy buys unbroken facts at retrieval time."
+ },
+ {
+  "id": "fc-17",
+  "topic": "rag",
+  "front": "The grounding contract?",
+  "back": "Answer only from the provided context, cite sources, and say so when the context doesn't contain the answer. An honest refusal beats a confident hallucination in any enterprise setting."
+ },
+ {
+  "id": "fc-18",
+  "topic": "rag",
+  "front": "Reciprocal Rank Fusion (RRF)?",
+  "back": "Merge multiple rankings by scoring each document with the sum of 1/(k + rank) across lists (k commonly 60). Lets you fuse BM25 and vector results without comparing incompatible score scales."
+ },
+ {
+  "id": "fc-19",
+  "topic": "rag",
+  "front": "Lost in the middle?",
+  "back": "Models attend best to the start and end of a long context; facts buried mid-context get missed. Pack the highest-value chunks at the edges and resist stuffing k=20 into the prompt."
+ },
+ {
+  "id": "fc-20",
+  "topic": "rag",
+  "front": "Why keep BM25 alongside vector search?",
+  "back": "Embeddings miss exact terms - ticker codes, part numbers, names, negation. BM25 nails exact-match queries, vectors handle paraphrase; hybrid with RRF covers both query types."
+ },
+ {
+  "id": "fc-21",
+  "topic": "embeddings",
+  "front": "Cosine similarity - what does it measure?",
+  "back": "The angle between vectors, ignoring magnitude: 1 = same direction, ~0 = unrelated. On L2-normalized vectors it equals the dot product - hence: normalize once, then use fast dot products."
+ },
+ {
+  "id": "fc-22",
+  "topic": "embeddings",
+  "front": "Negation blindness?",
+  "back": "'Profits rose' and 'profits fell' embed suspiciously close: similar topic, opposite meaning. Embedding similarity is topical, not logical - hybrid search and reranking pick up the slack."
+ },
+ {
+  "id": "fc-23",
+  "topic": "embeddings",
+  "front": "HNSW in one breath?",
+  "back": "Hierarchical Navigable Small World - a layered graph index for approximate nearest-neighbour search. Trades a sliver of exact recall for sub-linear query time at millions of vectors."
+ },
+ {
+  "id": "fc-24",
+  "topic": "embeddings",
+  "front": "Bi-encoder vs cross-encoder?",
+  "back": "Bi-encoder embeds query and document separately: fast, indexable, coarse. Cross-encoder scores the pair together: slow, precise. Pattern: retrieve ~20 wide with the first, rerank to ~5 sharp with the second."
+ },
+ {
+  "id": "fc-25",
+  "topic": "embeddings",
+  "front": "Can you mix embedding models in one index?",
+  "back": "No - different models produce unrelated vector spaces, even at the same dimension, so similarities become noise. A model upgrade means re-embed the whole corpus, version the index, cut over, invalidate caches."
+ },
+ {
+  "id": "fc-26",
+  "topic": "agents",
+  "front": "The tool-use loop?",
+  "back": "Model returns tool_use (name + args) -> your code validates and executes -> append tool_result -> call the model again -> repeat until it stops with text. The model only ever asks; your code acts."
+ },
+ {
+  "id": "fc-27",
+  "topic": "agents",
+  "front": "Workflow vs agent - the one-line criteria?",
+  "back": "Steps known in advance: workflow (predictable, cheap, debuggable). Steps genuinely dynamic AND progress verifiable AND the cost tolerable: maybe an agent. Most products are better as workflows."
+ },
+ {
+  "id": "fc-28",
+  "topic": "agents",
+  "front": "Tool descriptions are...?",
+  "back": "...the model's only manual. Write them like API docs: what it does, when to use it, argument constraints (enums where possible), and what it returns - including an honest not_found result."
+ },
+ {
+  "id": "fc-29",
+  "topic": "agents",
+  "front": "Agent loop guards?",
+  "back": "max_steps, a per-run cost cap, repeated-identical-call detection, a tool allowlist, Pydantic validation of arguments before execution, and a full transcript log - the transcript is both debugger and resumable state."
+ },
+ {
+  "id": "fc-30",
+  "topic": "agents",
+  "front": "Approval gate anatomy?",
+  "back": "Pause before consequential actions (write, send, delete, spend): show the human the concrete plan or diff, take approve/deny - and feed a denial's reason back to the model so it can replan."
+ },
+ {
+  "id": "fc-31",
+  "topic": "evals",
+  "front": "What does recall@5 measure?",
+  "back": "The fraction of gold queries for which at least one expected source appears in the top 5 retrieved chunks. It answers: did retrieval find the right material at all?"
+ },
+ {
+  "id": "fc-32",
+  "topic": "evals",
+  "front": "MRR?",
+  "back": "Mean Reciprocal Rank: the average of 1/rank of the first correct result across queries. recall@k says whether the right chunk is present; MRR says how high it lands."
+ },
+ {
+  "id": "fc-33",
+  "topic": "evals",
+  "front": "Three LLM-judge biases?",
+  "back": "Position bias (favors the first answer), verbosity bias (longer reads as better), self-preference (favors its own style) - plus sycophancy toward confident tone. Rubrics, evidence quotes and calibration are the antidotes."
+ },
+ {
+  "id": "fc-34",
+  "topic": "evals",
+  "front": "How does a judge earn your trust?",
+  "back": "Calibration: hand-label 10-20 outputs first, run the judge on the same set, measure agreement. Only once judge and human labels align do its unsupervised scores mean anything."
+ },
+ {
+  "id": "fc-35",
+  "topic": "evals",
+  "front": "Groundedness vs correctness?",
+  "back": "Groundedness: is every claim supported by the retrieved context? Correctness: does the answer match gold? An answer can be grounded but incomplete, or correct by luck while ungrounded - score them separately."
+ },
+ {
+  "id": "fc-36",
+  "topic": "databases",
+  "front": "SETNX - what is it and what's it for?",
+  "back": "Redis SET with NX (only if the key doesn't exist) plus EX for expiry - one atomic operation. The primitive behind idempotency guards, job dedupe and simple distributed locks."
+ },
+ {
+  "id": "fc-37",
+  "topic": "databases",
+  "front": "Cache-aside pattern?",
+  "back": "On read: check the cache; on miss, compute from the source of truth and write back with a TTL. The application owns the logic - the cache is a look-aside accelerator, never the source of truth."
+ },
+ {
+  "id": "fc-38",
+  "topic": "databases",
+  "front": "The cache-key rule?",
+  "back": "The key must encode everything the value depends on - model, prompt version, normalized query, index version, tenant. Any dependency you omit becomes a stale-answer bug later."
+ },
+ {
+  "id": "fc-39",
+  "topic": "databases",
+  "front": "N+1 queries?",
+  "back": "One query for N rows, then one more per row inside a loop - usually ORM lazy loading. The tell: N near-identical queries in the log. Fix with eager loading (selectinload/joinedload) or a join."
+ },
+ {
+  "id": "fc-40",
+  "topic": "databases",
+  "front": "At-least-once delivery implies...?",
+  "back": "...every job can run twice, so jobs must be idempotent: dedupe with a content-hash SETNX guard, check-before-work, upsert instead of insert. Exactly-once delivery is marketing."
+ },
+ {
+  "id": "fc-41",
+  "topic": "system-design",
+  "front": "The four golden signals?",
+  "back": "Latency, traffic, errors, saturation. For an LLM service: p95 TTFT and total, tokens per minute, refusal and malformed-output rates, queue depth and provider rate-limit headroom."
+ },
+ {
+  "id": "fc-42",
+  "topic": "system-design",
+  "front": "Circuit breaker: three states and transitions?",
+  "back": "Closed (calls flow, failures counted) -> Open when the threshold trips (fail fast, no calls) -> Half-open after a cooldown (probe requests: success closes it, failure re-opens). Stops you hammering a struggling dependency."
+ },
+ {
+  "id": "fc-43",
+  "topic": "system-design",
+  "front": "Timeout budget?",
+  "back": "The caller's deadline bounds everything inside: each inner timeout must be shorter than the outer one, with retry headroom included, or you burn work for clients that already gave up."
+ },
+ {
+  "id": "fc-44",
+  "topic": "system-design",
+  "front": "Top discovery questions before proposing an AI system?",
+  "back": "Who uses it, how often? What does the current process cost, and what does a failure cost? Where does the data live, how fresh is it, who may access it? What number defines success? Which compliance constraints apply?"
+ },
+ {
+  "id": "fc-45",
+  "topic": "system-design",
+  "front": "ROI framing for an AI proposal?",
+  "back": "Value = hours saved x loaded cost + errors avoided x failure cost, set against system cost: tokens, infra, people, maintenance. Present ranges with named assumptions, and define the POC metric that would prove the value."
+ },
+ {
+  "id": "fc-46",
+  "topic": "debugging",
+  "front": "Jitter: why add randomness to backoff?",
+  "back": "Synchronized clients retry in waves that re-spike the recovering dependency - the thundering herd. Randomized delays spread the retries out so recovery can actually happen."
+ },
+ {
+  "id": "fc-47",
+  "topic": "debugging",
+  "front": "Correlation ID?",
+  "back": "One id generated at the edge and propagated through headers, log lines AND job payloads, so a single request's journey across API, queue and workers can be reconstructed with one search."
+ },
+ {
+  "id": "fc-48",
+  "topic": "debugging",
+  "front": "Why p95 latency instead of the mean?",
+  "back": "The mean hides tail pain: nine fast requests and one 30-second hang average out to 'fine'. p95/p99 describe what your slowest real users actually experience - and LLM latency tails are long."
+ },
+ {
+  "id": "fc-49",
+  "topic": "debugging",
+  "front": "Symptom of a blocked event loop?",
+  "back": "Everything goes serial: unrelated endpoints slow down together and concurrency collapses to one. Cause: sync work (time.sleep, requests, heavy CPU) inside async def. Fix: async equivalents, or push it to a thread."
+ },
+ {
+  "id": "fc-50",
+  "topic": "debugging",
+  "front": "Why structured (JSON) logs?",
+  "back": "Machines read logs: JSON fields like request_id, duration_ms and cost are queryable and aggregatable, where prose needs regex archaeology. Log events with fields, not sentences."
+ },
+ {
+  "id": "fc-51",
+  "topic": "security",
+  "front": "Indirect prompt injection?",
+  "back": "Malicious instructions hidden in content your system ingests - retrieved docs, tool results, inbound email - that fire when a model reads them. The attacker never touches your app, only your data sources."
+ },
+ {
+  "id": "fc-52",
+  "topic": "security",
+  "front": "OWASP LLM Top 10 - name three items.",
+  "back": "LLM01 Prompt Injection, LLM02 Sensitive Information Disclosure, LLM06 Excessive Agency. Use the full list as a pre-launch review checklist against your architecture."
+ },
+ {
+  "id": "fc-53",
+  "topic": "security",
+  "front": "Tenant isolation - where is it enforced?",
+  "back": "At the data layer: tenant_id on every table, vector payload and cache key, applied as a mandatory filter in the retriever and queries. Proven by a permanent test: user A can never retrieve user B's documents."
+ },
+ {
+  "id": "fc-54",
+  "topic": "security",
+  "front": "Why is 'the prompt forbids it' not a security control?",
+  "back": "Prompts are advisory, probabilistic and injectable - they share a channel with attacker content. Enforcement belongs in code and queries; the model should never see data it isn't allowed to leak."
+ },
+ {
+  "id": "fc-55",
+  "topic": "security",
+  "front": "Secrets hygiene for an LLM service?",
+  "back": "Env vars or a secret manager only - never code, logs or third-party prompts; constant-time comparison for API keys; rotation-ready; and a CI grep-audit so a leaked key fails the build."
+ },
+ {
+  "id": "fc-56",
+  "topic": "deployment",
+  "front": "Docker layer caching rule?",
+  "back": "Each instruction is a cached layer, invalidated top-down when its inputs change. Copy dependency manifests and install first, copy code last - then a code edit rebuilds seconds of layers, not the whole image."
+ },
+ {
+  "id": "fc-57",
+  "topic": "deployment",
+  "front": "Multi-stage build - the point?",
+  "back": "Build with the fat tooling in one stage, copy only the app and its venv into a slim runtime stage. Smaller, faster-pulling image with less attack surface - and run it as a non-root USER."
+ },
+ {
+  "id": "fc-58",
+  "topic": "deployment",
+  "front": "CI gates for an AI service?",
+  "back": "Lint (ruff), offline tests with mocked LLM fixtures, an image build, plus a small eval smoke (about 5 cases, temperature 0, spend cap) - all required checks behind branch protection. The full eval set runs pre-release, not per PR."
+ },
+ {
+  "id": "fc-59",
+  "topic": "deployment",
+  "front": "What is a health check's job in deployment?",
+  "back": "It gates traffic: compose won't start dependents and a PaaS won't cut over until it passes, so a broken build never replaces a working one. Point it at real readiness, not just process-up."
+ },
+ {
+  "id": "fc-60",
+  "topic": "deployment",
+  "front": "12-factor config?",
+  "back": "Config lives in environment variables, not code: one immutable image runs in every environment, secrets stay out of the repo, and rollback is just redeploying the previous image."
+ }
+]

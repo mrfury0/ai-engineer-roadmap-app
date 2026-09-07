@@ -1,0 +1,630 @@
+[
+ {
+  "id": "mini-snapshot",
+  "name": "Market Snapshot CLI",
+  "tier": "mini",
+  "week": 1,
+  "blurb": "A typed, validated, logged Typer CLI that reads an instruments fixture, filters it, computes summary stats and writes a report without dying on corrupt rows.",
+  "itemIds": [
+   "w1d6a",
+   "w1d6b",
+   "w1d6c"
+  ],
+  "stack": [
+   "Python",
+   "uv",
+   "Typer",
+   "Pydantic",
+   "pytest"
+  ],
+  "portfolioWeight": 1,
+  "checklist": [
+   {
+    "id": "snap-repo",
+    "label": "GitHub repo public",
+    "hint": "src/aie_lab layout visible from the repo root, uv.lock committed, and a v0.1.0 tag on the commit that first runs end to end."
+   },
+   {
+    "id": "snap-readme",
+    "label": "README with problem statement",
+    "hint": "Open with the problem: raw instrument feeds are messy and you need one trustworthy summary command, then show install and the exact snapshot invocation."
+   },
+   {
+    "id": "snap-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Paste the terminal output of a normal run and of the corrupt-fixture run so the quarantine behaviour is visible, not just claimed."
+   },
+   {
+    "id": "snap-tests",
+    "label": "Tests passing",
+    "hint": "Tests cover parsing, exchange and currency filtering and the quarantine path, and the README says how to run them in one line."
+   },
+   {
+    "id": "snap-decisions",
+    "label": "Design decisions documented",
+    "hint": "One paragraph on why Pydantic guards the boundary while dataclasses carry internal state, and why config comes from .env."
+   },
+   {
+    "id": "snap-limits",
+    "label": "Known limitations documented",
+    "hint": "Say plainly that it reads a local fixture rather than a live feed, and that the cache has a fixed TTL with no invalidation hook."
+   },
+   {
+    "id": "snap-next",
+    "label": "Future improvements listed",
+    "hint": "Name the next two concrete steps, such as swapping the fixture for a real filings endpoint and adding a --format md report."
+   }
+  ]
+ },
+ {
+  "id": "mini-fetcher",
+  "name": "Concurrent Filings Fetcher",
+  "tier": "mini",
+  "week": 2,
+  "blurb": "An async fetcher that pulls many tickers under bounded concurrency with tenacity retries, validates every response and proves the speed-up with numbers.",
+  "itemIds": [
+   "w2d6a",
+   "w2d6b"
+  ],
+  "stack": [
+   "Python",
+   "asyncio",
+   "httpx",
+   "tenacity",
+   "pytest",
+   "respx"
+  ],
+  "portfolioWeight": 1,
+  "checklist": [
+   {
+    "id": "fetch-repo",
+    "label": "GitHub repo public",
+    "hint": "Work landed through a branch and a self-reviewed pull request, so the history shows the professional flow you learned this week."
+   },
+   {
+    "id": "fetch-readme",
+    "label": "README with problem statement",
+    "hint": "State the problem as twenty sequential network calls costing twenty seconds, then show the gather-with-semaphore answer."
+   },
+   {
+    "id": "fetch-arch",
+    "label": "Architecture diagram",
+    "hint": "An ASCII sketch is fine: client to semaphore to retry wrapper to validator to quarantine and report file."
+   },
+   {
+    "id": "fetch-tests",
+    "label": "Tests passing",
+    "hint": "respx covers 200, 404, 500 and timeout paths offline, plus one flaky-simulation test proving 500-500-200 succeeds."
+   },
+   {
+    "id": "fetch-decisions",
+    "label": "Design decisions documented",
+    "hint": "Explain the concurrency cap of five, and why retries fire on 5xx and timeouts but never on a 404."
+   },
+   {
+    "id": "fetch-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish the real wall-clock table: twenty tickers concurrent versus sequential, measured on your machine, with the ratio."
+   },
+   {
+    "id": "fetch-next",
+    "label": "Future improvements listed",
+    "hint": "Name what you would do next, such as swapping the stand-in public API for a real filings provider behind the same client interface."
+   }
+  ]
+ },
+ {
+  "id": "mini-notes",
+  "name": "Notes API, Deployed",
+  "tier": "mini",
+  "week": 3,
+  "blurb": "A CRUD notes service with API-key auth, per-key rate limits, idempotent create, request ids and an error envelope, running on a public URL.",
+  "itemIds": [
+   "w3d6a",
+   "w3d6b"
+  ],
+  "stack": [
+   "FastAPI",
+   "Pydantic",
+   "slowapi",
+   "pytest",
+   "Render"
+  ],
+  "portfolioWeight": 2,
+  "checklist": [
+   {
+    "id": "notes-repo",
+    "label": "GitHub repo public",
+    "hint": "Routers, services and models are split into packages so a reviewer can find the auth dependency in under a minute."
+   },
+   {
+    "id": "notes-readme",
+    "label": "README with problem statement",
+    "hint": "Frame it as the smallest honest production API: authenticated, rate limited and safe to retry, then link the live URL and /docs."
+   },
+   {
+    "id": "notes-url",
+    "label": "Live deployment URL",
+    "hint": "The Render URL answers the health check path, and the README is honest that free-tier cold starts add several seconds to the first call."
+   },
+   {
+    "id": "notes-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Include the curl demo script output: create with an idempotency key, replay it, and show the identical response body."
+   },
+   {
+    "id": "notes-tests",
+    "label": "Tests passing",
+    "hint": "TestClient suite proves 401 without a key, the 422 envelope shape, and a 429 with Retry-After after a burst."
+   },
+   {
+    "id": "notes-decisions",
+    "label": "Design decisions documented",
+    "hint": "Explain the idempotency key store and its TTL, and why the error envelope carries a request id instead of a stack trace."
+   },
+   {
+    "id": "notes-limits",
+    "label": "Known limitations documented",
+    "hint": "Say that persistence is a JSON file, that the rate limiter is per process, and name what breaks when a second instance starts."
+   }
+  ]
+ },
+ {
+  "id": "mini-extractor",
+  "name": "Structured Extractor API",
+  "tier": "mini",
+  "week": 4,
+  "blurb": "A POST /extract service turning messy text into schema-validated JSON through the resilient LLM client, with a repair path and per-request cost logging.",
+  "itemIds": [
+   "w4d6a"
+  ],
+  "stack": [
+   "FastAPI",
+   "Pydantic",
+   "Anthropic or OpenAI SDK",
+   "pytest"
+  ],
+  "portfolioWeight": 2,
+  "checklist": [
+   {
+    "id": "ext-repo",
+    "label": "GitHub repo public",
+    "hint": "The schema registry (deal, contact, invoice) sits in its own module so adding a fourth schema is obviously a small change."
+   },
+   {
+    "id": "ext-readme",
+    "label": "README with problem statement",
+    "hint": "Lead with the business problem: free text into typed records that downstream systems can insert without a human reading them."
+   },
+   {
+    "id": "ext-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Show one request and response pair including a field left null because the source text genuinely lacked it."
+   },
+   {
+    "id": "ext-tests",
+    "label": "Tests passing",
+    "hint": "Every test runs offline against fixture model responses, including one malformed reply that proves the repair path recovers."
+   },
+   {
+    "id": "ext-decisions",
+    "label": "Design decisions documented",
+    "hint": "Explain why the Pydantic schema is the prompt contract, and why optional fields beat forcing the model to invent values."
+   },
+   {
+    "id": "ext-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish the measured cost per thousand requests from your ledger, with the token counts and model that produced it."
+   },
+   {
+    "id": "ext-limits",
+    "label": "Known limitations documented",
+    "hint": "State the extraction accuracy you have actually observed on your own samples, and that there is no gold set behind it yet."
+   }
+  ]
+ },
+ {
+  "id": "med-triage",
+  "name": "TriageDesk Support Triage",
+  "tier": "medium",
+  "week": 5,
+  "blurb": "A support-email service that classifies, extracts entities, looks up the customer through a tool call and streams a drafted reply with a confidence field.",
+  "itemIds": [
+   "w5d5a",
+   "w5d6a",
+   "w5d6b"
+  ],
+  "stack": [
+   "FastAPI",
+   "Pydantic",
+   "tool calling",
+   "SSE",
+   "pytest"
+  ],
+  "portfolioWeight": 3,
+  "checklist": [
+   {
+    "id": "tri-repo",
+    "label": "GitHub repo public",
+    "hint": "Prompts live in a prompts/ directory with version notes, not buried in f-strings inside the handlers."
+   },
+   {
+    "id": "tri-readme",
+    "label": "README with problem statement",
+    "hint": "Open with the cost of manual triage: a queue of raw emails, and the minutes per ticket your service removes."
+   },
+   {
+    "id": "tri-arch",
+    "label": "Architecture diagram",
+    "hint": "A mermaid diagram of ingest, classify, extract, customer_lookup tool call, draft and stream, with the validation step marked."
+   },
+   {
+    "id": "tri-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Record the streaming draft endpoint with curl -N so the reader sees tokens arriving, not a still frame of finished text."
+   },
+   {
+    "id": "tri-url",
+    "label": "Live deployment URL",
+    "hint": "Deploy with a demo API key and a sample ticket in the README so a reviewer can trigger a real triage in one command."
+   },
+   {
+    "id": "tri-tests",
+    "label": "Tests passing",
+    "hint": "The LLM is mocked throughout, and edge cases are pinned: empty email, a ten-thousand-word rant, and an instruction-injection attempt."
+   },
+   {
+    "id": "tri-decisions",
+    "label": "Design decisions documented",
+    "hint": "Justify the model tier per stage, the confidence field's meaning, and why the tool result contract returns not_found rather than guessing."
+   },
+   {
+    "id": "tri-limits",
+    "label": "Known limitations documented",
+    "hint": "Admit that the customer database is a fixture, and that the injection attempt is flagged rather than fully neutralised at this stage."
+   },
+   {
+    "id": "tri-next",
+    "label": "Future improvements listed",
+    "hint": "Name the queue for slow drafts and a gold set of labelled tickets as the next two moves, in that order."
+   },
+   {
+    "id": "tri-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish cost per ticket from the ledger and the p95 latency of the classify-and-extract path across your sample emails."
+   }
+  ]
+ },
+ {
+  "id": "mini-askdocs",
+  "name": "Ask-My-Docs v1",
+  "tier": "mini",
+  "week": 6,
+  "blurb": "A CLI and endpoint answering questions over your own PDF corpus with citations, metadata filters, honest refusals and a committed 25-case gold set.",
+  "itemIds": [
+   "w6d6a"
+  ],
+  "stack": [
+   "Python",
+   "Qdrant",
+   "PyMuPDF",
+   "sentence-transformers",
+   "FastAPI"
+  ],
+  "portfolioWeight": 2,
+  "checklist": [
+   {
+    "id": "ask-repo",
+    "label": "GitHub repo public",
+    "hint": "gold.jsonl is committed at the repo root level where a reviewer trips over it, because the gold set is the interesting artifact."
+   },
+   {
+    "id": "ask-readme",
+    "label": "README with problem statement",
+    "hint": "Name the documents you indexed and the questions people actually ask of them, then show ingest and ask commands."
+   },
+   {
+    "id": "ask-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Show one answered question with its citations and one unanswerable question where the system refuses cleanly."
+   },
+   {
+    "id": "ask-tests",
+    "label": "Tests passing",
+    "hint": "Tests prove chunk ids in citations resolve to real chunks, and that the five unanswerable gold cases return a refusal."
+   },
+   {
+    "id": "ask-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish the gold set shape: 25 cases split across easy, medium, hard and unanswerable, with your first eyeballed hit rate."
+   },
+   {
+    "id": "ask-decisions",
+    "label": "Design decisions documented",
+    "hint": "Explain your chunk size and overlap choice against the broken-sentence rate you measured, and why metadata filtering exists."
+   },
+   {
+    "id": "ask-limits",
+    "label": "Known limitations documented",
+    "hint": "State that retrieval is dense-only for now, and that vocabulary mismatch between question and document is a known miss."
+   }
+  ]
+ },
+ {
+  "id": "med-docqa",
+  "name": "DocQA Productionized",
+  "tier": "medium",
+  "week": 7,
+  "blurb": "The evaluated DocQA service: upload and ingest, hybrid retrieval with reranking, cited answers with confidence, auth, rate limits and a one-command eval suite.",
+  "itemIds": [
+   "w7d5a",
+   "w7d6a",
+   "w7d6b"
+  ],
+  "stack": [
+   "FastAPI",
+   "Qdrant",
+   "BM25",
+   "cross-encoder",
+   "pytest"
+  ],
+  "portfolioWeight": 3,
+  "checklist": [
+   {
+    "id": "doc-repo",
+    "label": "GitHub repo public",
+    "hint": "run_evals.py sits beside the app code and runs from a single command documented in the README."
+   },
+   {
+    "id": "doc-readme",
+    "label": "README with problem statement",
+    "hint": "Lead with the question your corpus answers for a real reader, then the metrics table, then how to run it."
+   },
+   {
+    "id": "doc-arch",
+    "label": "Architecture diagram",
+    "hint": "Diagram the two paths separately: ingest (upload, chunk, embed, index) and ask (rewrite, hybrid, rerank, pack, answer)."
+   },
+   {
+    "id": "doc-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Screenshot an answer with citations next to the eval summary output, so quality and measurement appear together."
+   },
+   {
+    "id": "doc-url",
+    "label": "Live deployment URL",
+    "hint": "A public instance with a seeded read-only corpus, and a note that ingest is disabled on the demo tenant."
+   },
+   {
+    "id": "doc-tests",
+    "label": "Tests passing",
+    "hint": "Unit tests plus eval thresholds as assertions, so a bad retrieval change fails the suite rather than shipping quietly."
+   },
+   {
+    "id": "doc-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish the money table: baseline, hybrid, hybrid plus rerank with recall@5, MRR, groundedness and added latency per stage."
+   },
+   {
+    "id": "doc-decisions",
+    "label": "Design decisions documented",
+    "hint": "Justify retrieving twenty and reranking to five, and the judge rubric you calibrated against your own hand labels."
+   },
+   {
+    "id": "doc-limits",
+    "label": "Known limitations documented",
+    "hint": "Report the judge agreement percentage honestly and name the failure categories still present in your worst five cases."
+   },
+   {
+    "id": "doc-next",
+    "label": "Future improvements listed",
+    "hint": "Point at the queue and Postgres upgrade coming in week nine, and any gold cases you know are still too easy."
+   }
+  ]
+ },
+ {
+  "id": "mini-agent",
+  "name": "Research Agent",
+  "tier": "mini",
+  "week": 8,
+  "blurb": "A from-scratch agent over your document corpus with tools, a scratchpad, an approval gate on saving reports, a trace viewer and a ten-task eval.",
+  "itemIds": [
+   "w8d4a",
+   "w8d6a"
+  ],
+  "stack": [
+   "Python",
+   "tool calling",
+   "Anthropic or OpenAI SDK",
+   "pytest"
+  ],
+  "portfolioWeight": 2,
+  "checklist": [
+   {
+    "id": "ag-repo",
+    "label": "GitHub repo public",
+    "hint": "The loop is one readable file of roughly fifty lines, because being able to point at it is the whole claim."
+   },
+   {
+    "id": "ag-readme",
+    "label": "README with problem statement",
+    "hint": "State the multi-part questions the agent handles, and include the workflow-versus-agent verdict paragraph with its numbers."
+   },
+   {
+    "id": "ag-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Paste a pretty-printed transcript showing tool calls, the scratchpad note and the approval gate pausing on save_report."
+   },
+   {
+    "id": "ag-tests",
+    "label": "Tests passing",
+    "hint": "Tests cover the max-steps guard, the repeated-call detector, and both the approve and deny paths of the gate."
+   },
+   {
+    "id": "ag-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish the eval result as at least seven of ten tasks passing, with mean cost and mean steps per task."
+   },
+   {
+    "id": "ag-decisions",
+    "label": "Design decisions documented",
+    "hint": "Explain the sandbox corpus directory, the tool allowlist and the cost cap, and why the loop has no framework under it."
+   },
+   {
+    "id": "ag-limits",
+    "label": "Known limitations documented",
+    "hint": "Write up one failure with its root cause from your taxonomy, such as a premature stop or an ignored piece of evidence."
+   }
+  ]
+ },
+ {
+  "id": "med-platform",
+  "name": "DocQA Platform Upgrade",
+  "tier": "medium",
+  "week": 9,
+  "blurb": "DocQA grown into a platform: async ingestion through arq workers, Postgres persistence, Redis cache and limits, webhook intake and a live stats endpoint.",
+  "itemIds": [
+   "w9d6a"
+  ],
+  "stack": [
+   "FastAPI",
+   "Postgres",
+   "SQLAlchemy",
+   "Alembic",
+   "Redis",
+   "arq"
+  ],
+  "portfolioWeight": 3,
+  "checklist": [
+   {
+    "id": "plat-repo",
+    "label": "GitHub repo public",
+    "hint": "Migrations are in version control and the seed script runs against a clean database without manual SQL."
+   },
+   {
+    "id": "plat-readme",
+    "label": "README with problem statement",
+    "hint": "Explain what broke at the previous design: a request handler doing minutes of embedding work behind a sixty-second timeout."
+   },
+   {
+    "id": "plat-arch",
+    "label": "Architecture diagram",
+    "hint": "Show API, queue, worker, Postgres, Redis and vector store with the job id flowing from POST /documents to GET /jobs/{id}."
+   },
+   {
+    "id": "plat-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "Capture the upload returning a job id instantly, then the status endpoint moving through progress to done."
+   },
+   {
+    "id": "plat-url",
+    "label": "Live deployment URL",
+    "hint": "Deploy at least the API publicly, and document which components run where and what the demo tenant is allowed to do."
+   },
+   {
+    "id": "plat-tests",
+    "label": "Tests passing",
+    "hint": "Include the invariant test: enqueue the same document twice and prove exactly one processing run through the SETNX guard."
+   },
+   {
+    "id": "plat-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish the stats endpoint numbers: cache hit rate, average latency, documents and queries processed, and cost per query."
+   },
+   {
+    "id": "plat-decisions",
+    "label": "Design decisions documented",
+    "hint": "Explain the cache key including the index version, and why webhook handlers verify, dedupe and enqueue rather than process."
+   },
+   {
+    "id": "plat-limits",
+    "label": "Known limitations documented",
+    "hint": "Name the dual-write gap you have not closed and the absence of a dead-letter queue for jobs that exhaust retries."
+   },
+   {
+    "id": "plat-next",
+    "label": "Future improvements listed",
+    "hint": "Point to containerisation, tracing and tenant isolation as the next week's work, with the one you consider most urgent first."
+   }
+  ]
+ },
+ {
+  "id": "cap-athena",
+  "name": "Athena Enterprise Knowledge Assistant",
+  "tier": "capstone",
+  "week": 11,
+  "blurb": "The flagship: a multi-tenant knowledge assistant with ingestion jobs, hybrid RAG with citations, tool-using assistant mode, evals, tracing, containers, CI and a public deploy.",
+  "itemIds": [
+   "w11d1a",
+   "w11d2a",
+   "w11d3a",
+   "w11d4a",
+   "w11d5a",
+   "w11d6a",
+   "w12d1a",
+   "w12d1b"
+  ],
+  "stack": [
+   "FastAPI",
+   "Postgres",
+   "Redis",
+   "arq",
+   "Qdrant",
+   "Docker",
+   "GitHub Actions"
+  ],
+  "portfolioWeight": 3,
+  "checklist": [
+   {
+    "id": "ath-repo",
+    "label": "GitHub repo public",
+    "hint": "ADR-001 is committed in the repo alongside the milestone history, so the reasoning is as readable as the result."
+   },
+   {
+    "id": "ath-readme",
+    "label": "README with problem statement",
+    "hint": "Write for a hiring manager with ninety seconds: the firm's problem, the demo link, then the metrics table above the fold."
+   },
+   {
+    "id": "ath-arch",
+    "label": "Architecture diagram",
+    "hint": "One mermaid diagram covering tenant-scoped ingestion, retrieval, assistant tools and the observability path, matching the deployed code."
+   },
+   {
+    "id": "ath-shots",
+    "label": "Screenshots or demo GIF",
+    "hint": "A three-minute walkthrough following the demo script: the ask, the cited answer, the eval table, then the architecture."
+   },
+   {
+    "id": "ath-url",
+    "label": "Live deployment URL",
+    "hint": "A public instance with a seeded safe demo tenant, deploy-on-main proven by one trivial change reaching the URL."
+   },
+   {
+    "id": "ath-tests",
+    "label": "Tests passing",
+    "hint": "The suite includes the permanent tenant-isolation test proving user A cannot retrieve user B's document, plus the injection mitigations."
+   },
+   {
+    "id": "ath-metrics",
+    "label": "Metrics/eval numbers published",
+    "hint": "Publish recall@5, groundedness, p95 latency and cost per query from the full eval run, with the date and model they were measured on."
+   },
+   {
+    "id": "ath-decisions",
+    "label": "Design decisions documented",
+    "hint": "Summarise the ADR in the README: why this retrieval stack, why arq over alternatives, and what you deliberately did not build."
+   },
+   {
+    "id": "ath-limits",
+    "label": "Known limitations documented",
+    "hint": "State residual injection risk honestly, the corpus scale you actually tested, and where cold starts or rate limits bite."
+   },
+   {
+    "id": "ath-next",
+    "label": "Future improvements listed",
+    "hint": "List the production gaps from your readiness checklist: runbook, per-tenant cost alerts and a wider gold set, in priority order."
+   }
+  ]
+ }
+]

@@ -1,0 +1,77 @@
+[
+ {
+  "n": 1,
+  "name": "Production Python Foundations",
+  "weeks": [
+   1,
+   2
+  ],
+  "blurb": "Structure, types, validation, errors, logging, tests, async and a professional git flow — the base every later service is built on."
+ },
+ {
+  "n": 2,
+  "name": "APIs and Backend Engineering",
+  "weeks": [
+   3
+  ],
+  "blurb": "HTTP from memory and a FastAPI service with auth, rate limits, idempotency and tests, deployed to a real public URL."
+ },
+ {
+  "n": 3,
+  "name": "LLM Engineering Fundamentals",
+  "weeks": [
+   4,
+   5
+  ],
+  "blurb": "Tokens, calls, streaming, structured output, tool calling and cost control — the resilient LLM layer under every project that follows."
+ },
+ {
+  "n": 4,
+  "name": "Embeddings and RAG",
+  "weeks": [
+   6
+  ],
+  "blurb": "Embeddings, chunking, vector search and grounded answers with citations, built by hand before any framework is allowed near it."
+ },
+ {
+  "n": 5,
+  "name": "Evaluation",
+  "weeks": [
+   7
+  ],
+  "blurb": "Gold sets, retrieval metrics, LLM judges and regression gates — the week that turns opinions about quality into numbers."
+ },
+ {
+  "n": 6,
+  "name": "Agents and AI Workflows",
+  "weeks": [
+   8
+  ],
+  "blurb": "Workflow patterns and a from-scratch agent loop with state, approval gates and evals, plus the judgment to choose between them."
+ },
+ {
+  "n": 7,
+  "name": "Databases and System Design",
+  "weeks": [
+   9
+  ],
+  "blurb": "Postgres, Redis, queues, workers and webhooks under your AI service, and the method for designing and defending such systems."
+ },
+ {
+  "n": 8,
+  "name": "Reliability, Security and Observability",
+  "weeks": [
+   10
+  ],
+  "blurb": "Tracing, resilience patterns, prompt injection defence, tenant isolation, containers and CI — the week that makes it trustworthy."
+ },
+ {
+  "n": 10,
+  "name": "Capstone and AI Consulting Skills",
+  "weeks": [
+   11,
+   12
+  ],
+  "blurb": "Build and ship Athena while learning discovery, cost modelling, proposals and case craft, then package the whole quarter for hiring."
+ }
+]

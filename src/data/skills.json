@@ -1,0 +1,909 @@
+[
+ {
+  "id": "py-tooling",
+  "name": "Project Structure & Tooling",
+  "category": "Python",
+  "blurb": "You can scaffold a Python project with uv, src layout and lockfiles that another engineer can clone and run first try.",
+  "icon": "🧱",
+  "requires": [],
+  "items": [
+   "w1d1a",
+   "w1d1b",
+   "w1d1c",
+   "w2d5b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w1",
+   "project": "mini-snapshot",
+   "tickets": []
+  }
+ },
+ {
+  "id": "py-typing",
+  "name": "Typed Python",
+  "category": "Python",
+  "blurb": "You can use type hints and dataclasses as design tools, and make a messy module pass strict type checking without papering over its bugs.",
+  "icon": "🏷️",
+  "requires": [
+   "py-tooling"
+  ],
+  "items": [
+   "w1d2a",
+   "w1d2b",
+   "w1d2c"
+  ],
+  "evidence": {
+   "quiz": "quiz-w1",
+   "project": "mini-snapshot",
+   "tickets": []
+  }
+ },
+ {
+  "id": "py-errors",
+  "name": "Errors & Failure Design",
+  "category": "Python",
+  "blurb": "You can design an exception hierarchy, chain causes with raise-from, and parse junk input without losing rows silently.",
+  "icon": "💥",
+  "requires": [
+   "py-typing"
+  ],
+  "items": [
+   "w1d4a",
+   "w1d4b",
+   "w1d4c"
+  ],
+  "evidence": {
+   "quiz": "quiz-w1",
+   "project": "mini-snapshot",
+   "tickets": []
+  }
+ },
+ {
+  "id": "be-validation",
+  "name": "Validation with Pydantic",
+  "category": "Backend",
+  "blurb": "You can validate every input at the boundary with Pydantic models and load configuration from the environment without secrets in code.",
+  "icon": "✅",
+  "requires": [
+   "py-typing"
+  ],
+  "items": [
+   "w1d3a",
+   "w1d3b",
+   "w1d4c",
+   "w1d6a",
+   "w1d6b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w1",
+   "project": "mini-snapshot",
+   "tickets": [
+    "tk-validation-bypass"
+   ]
+  }
+ },
+ {
+  "id": "be-testing",
+  "name": "Testing & Mocking",
+  "category": "Backend",
+  "blurb": "You can write fixture-driven, parametrized tests that pin behaviour and stub the network, so refactoring stops being scary.",
+  "icon": "🧪",
+  "requires": [
+   "py-tooling"
+  ],
+  "items": [
+   "w2d1a",
+   "w2d1b",
+   "w2d2a",
+   "w2d2b",
+   "w3d5c"
+  ],
+  "evidence": {
+   "quiz": "quiz-w2",
+   "project": "mini-fetcher",
+   "tickets": []
+  }
+ },
+ {
+  "id": "be-async",
+  "name": "Async & Concurrency",
+  "category": "Backend",
+  "blurb": "You can run bounded-concurrency I/O with asyncio and spot the blocking call that quietly serialises an async service.",
+  "icon": "⚡",
+  "requires": [
+   "py-errors"
+  ],
+  "items": [
+   "w2d4a",
+   "w2d4b",
+   "w2d6a",
+   "w2d6b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w2",
+   "project": "mini-fetcher",
+   "tickets": [
+    "tk-async-blocking"
+   ]
+  }
+ },
+ {
+  "id": "api-http",
+  "name": "HTTP Semantics & Clients",
+  "category": "APIs",
+  "blurb": "You can pick the right status code and method for a situation and drive a remote API with timeouts and safe retry policy.",
+  "icon": "🌐",
+  "requires": [
+   "py-errors",
+   "be-testing"
+  ],
+  "items": [
+   "w2d3a",
+   "w2d3b",
+   "w3d1a",
+   "w3d1b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w3",
+   "project": "mini-fetcher",
+   "tickets": [
+    "tk-rate-storm"
+   ]
+  }
+ },
+ {
+  "id": "api-fastapi",
+  "name": "FastAPI Services",
+  "category": "APIs",
+  "blurb": "You can build a typed FastAPI service with dependency injection, response models, a consistent error envelope and streaming endpoints.",
+  "icon": "🚀",
+  "requires": [
+   "api-http",
+   "be-validation"
+  ],
+  "items": [
+   "w3d2a",
+   "w3d2b",
+   "w3d3a",
+   "w3d3b",
+   "w3d6b",
+   "w5d2a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w3",
+   "project": "mini-notes",
+   "tickets": [
+    "tk-validation-bypass",
+    "tk-streaming-cutoff"
+   ]
+  }
+ },
+ {
+  "id": "api-hardening",
+  "name": "Auth, Rate Limits & Idempotency",
+  "category": "APIs",
+  "blurb": "You can protect an endpoint with API keys, request ids, per-key rate limits and idempotency keys that survive a retrying client.",
+  "icon": "🔑",
+  "requires": [
+   "api-fastapi"
+  ],
+  "items": [
+   "w3d4a",
+   "w3d4b",
+   "w3d5a",
+   "w3d6a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w3",
+   "project": "mini-notes",
+   "tickets": [
+    "tk-rate-storm",
+    "tk-duplicate-jobs"
+   ]
+  }
+ },
+ {
+  "id": "db-sql",
+  "name": "SQL & ORM with Postgres",
+  "category": "Databases",
+  "blurb": "You can model an application schema in SQLAlchemy, manage transactions, and evolve the database with reviewed Alembic migrations.",
+  "icon": "🗄️",
+  "requires": [
+   "api-fastapi"
+  ],
+  "items": [
+   "w9d1a",
+   "w9d1b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w9",
+   "project": "med-platform",
+   "tickets": []
+  }
+ },
+ {
+  "id": "db-cache",
+  "name": "Caching & Cache Keys",
+  "category": "Databases",
+  "blurb": "You can cache expensive answers in Redis with a key that encodes every input the answer depends on, and invalidate it on reindex.",
+  "icon": "🧊",
+  "requires": [
+   "db-sql"
+  ],
+  "items": [
+   "w1d6c",
+   "w5d3a",
+   "w9d2a",
+   "w9d2b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w9",
+   "project": "med-platform",
+   "tickets": [
+    "tk-stale-cache"
+   ]
+  }
+ },
+ {
+  "id": "db-queues",
+  "name": "Queues & Workers",
+  "category": "Databases",
+  "blurb": "You can move heavy work out of request handlers into arq workers with job ids, status endpoints, dedupe and safe webhook intake.",
+  "icon": "📮",
+  "requires": [
+   "be-async",
+   "db-cache"
+  ],
+  "items": [
+   "w3d5b",
+   "w9d3a",
+   "w9d3b",
+   "w9d4a",
+   "w9d4b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w9",
+   "project": "med-platform",
+   "tickets": [
+    "tk-duplicate-jobs",
+    "tk-webhook-replay"
+   ]
+  }
+ },
+ {
+  "id": "llm-apis",
+  "name": "LLM APIs & Resilient Client",
+  "category": "LLMs",
+  "blurb": "You can call either major vendor behind one interface, stream responses, and wrap it in a client with retries, timeouts and fallbacks.",
+  "icon": "🤖",
+  "requires": [
+   "api-http"
+  ],
+  "items": [
+   "w4d1a",
+   "w4d2a",
+   "w4d2b",
+   "w4d5a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w4",
+   "project": "mini-extractor",
+   "tickets": [
+    "tk-streaming-cutoff"
+   ]
+  }
+ },
+ {
+  "id": "llm-prompting",
+  "name": "Prompt & Context Engineering",
+  "category": "LLMs",
+  "blurb": "You can write versioned prompts with explicit output contracts and pack a context window by priority instead of by hope.",
+  "icon": "✍️",
+  "requires": [
+   "llm-apis"
+  ],
+  "items": [
+   "w4d3a",
+   "w4d3b",
+   "w5d2b",
+   "w5d4a",
+   "w5d4b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w4",
+   "project": "med-triage",
+   "tickets": [
+    "tk-token-blowup"
+   ]
+  }
+ },
+ {
+  "id": "llm-structured",
+  "name": "Structured Outputs",
+  "category": "LLMs",
+  "blurb": "You can make a model return JSON you can trust by making a Pydantic schema the contract, with a repair path for the rest.",
+  "icon": "🧩",
+  "requires": [
+   "llm-apis",
+   "be-validation"
+  ],
+  "items": [
+   "w4d4a",
+   "w4d4b",
+   "w4d6a",
+   "w5d5a",
+   "w5d6a",
+   "w5d6b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w4",
+   "project": "mini-extractor",
+   "tickets": [
+    "tk-malformed-output"
+   ]
+  }
+ },
+ {
+  "id": "llm-cost",
+  "name": "Cost & Latency Engineering",
+  "category": "LLMs",
+  "blurb": "You can price a workload per thousand requests, cut it with prompt caching, and defend a model choice with a bench table.",
+  "icon": "💷",
+  "requires": [
+   "llm-apis"
+  ],
+  "items": [
+   "w4d1b",
+   "w4d5b",
+   "w5d3a",
+   "w5d3b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w5",
+   "project": "med-triage",
+   "tickets": [
+    "tk-token-blowup"
+   ]
+  }
+ },
+ {
+  "id": "rag-embeddings",
+  "name": "Embeddings & Vector Search",
+  "category": "RAG",
+  "blurb": "You can embed text, rank it by cosine similarity, name the query types embeddings fail on, and store vectors in a real vector database.",
+  "icon": "🧭",
+  "requires": [
+   "llm-apis"
+  ],
+  "items": [
+   "w6d1a",
+   "w6d1b",
+   "w6d3a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w6",
+   "project": "mini-askdocs",
+   "tickets": []
+  }
+ },
+ {
+  "id": "rag-chunking",
+  "name": "Chunking & Ingestion",
+  "category": "RAG",
+  "blurb": "You can turn real PDFs into clean, structure-aware chunks whose boundaries keep facts and their labels together.",
+  "icon": "📄",
+  "requires": [
+   "rag-embeddings"
+  ],
+  "items": [
+   "w6d2a",
+   "w6d2b",
+   "w6d3b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w6",
+   "project": "mini-askdocs",
+   "tickets": [
+    "tk-wrong-retrieval"
+   ]
+  }
+ },
+ {
+  "id": "rag-retrieval",
+  "name": "Retrieval, Hybrid & Reranking",
+  "category": "RAG",
+  "blurb": "You can diagnose a retrieval failure from its symptom and fix it with query rewriting, BM25 fusion and a cross-encoder rerank stage.",
+  "icon": "🔍",
+  "requires": [
+   "rag-chunking"
+  ],
+  "items": [
+   "w6d5a",
+   "w6d5b",
+   "w7d2a",
+   "w7d2b",
+   "w7d6a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w7",
+   "project": "med-docqa",
+   "tickets": [
+    "tk-wrong-retrieval",
+    "tk-slow-p95"
+   ]
+  }
+ },
+ {
+  "id": "rag-grounding",
+  "name": "Grounding & Citations",
+  "category": "RAG",
+  "blurb": "You can answer strictly from retrieved context, cite the chunk behind every claim, and refuse honestly when the context is silent.",
+  "icon": "📌",
+  "requires": [
+   "rag-retrieval",
+   "llm-prompting"
+  ],
+  "items": [
+   "w6d4a",
+   "w6d4b",
+   "w6d6a",
+   "w7d5a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w6",
+   "project": "mini-askdocs",
+   "tickets": [
+    "tk-hallucinated-citations",
+    "tk-prompt-injection"
+   ]
+  }
+ },
+ {
+  "id": "agent-tools",
+  "name": "Tool Calling",
+  "category": "Agents",
+  "blurb": "You can hand-roll the tool-call loop, write tool schemas and descriptions the model actually obeys, and keep results honest.",
+  "icon": "🔧",
+  "requires": [
+   "llm-structured"
+  ],
+  "items": [
+   "w5d1a",
+   "w5d1b",
+   "w5d5a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w5",
+   "project": "med-triage",
+   "tickets": [
+    "tk-malformed-output"
+   ]
+  }
+ },
+ {
+  "id": "agent-workflows",
+  "name": "Workflow Patterns & Judgment",
+  "category": "Agents",
+  "blurb": "You can build chains, routers and orchestrators, and argue from your own measurements when an agent is the wrong tool.",
+  "icon": "🔀",
+  "requires": [
+   "agent-tools"
+  ],
+  "items": [
+   "w8d1a",
+   "w8d1b",
+   "w8d4a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w8",
+   "project": "mini-agent",
+   "tickets": []
+  }
+ },
+ {
+  "id": "agent-loops",
+  "name": "Agent Loops & State",
+  "category": "Agents",
+  "blurb": "You can write an agent loop with termination guards, persist its transcript for resume, and gate consequential actions behind approval.",
+  "icon": "🔁",
+  "requires": [
+   "agent-tools"
+  ],
+  "items": [
+   "w8d2a",
+   "w8d2b",
+   "w8d3a",
+   "w8d3b",
+   "w8d6a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w8",
+   "project": "mini-agent",
+   "tickets": [
+    "tk-token-blowup"
+   ]
+  }
+ },
+ {
+  "id": "eval-gold",
+  "name": "Golden Datasets",
+  "category": "Evals",
+  "blurb": "You can build a gold set with difficulty tags, expected sources and unanswerable cases that a domain expert would sign off.",
+  "icon": "🥇",
+  "requires": [
+   "rag-grounding"
+  ],
+  "items": [
+   "w6d6a",
+   "w7d1a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w7",
+   "project": "mini-askdocs",
+   "tickets": []
+  }
+ },
+ {
+  "id": "eval-metrics",
+  "name": "Retrieval Metrics",
+  "category": "Evals",
+  "blurb": "You can score retrieval with recall@k and MRR and prove whether a pipeline change actually helped on the same gold set.",
+  "icon": "📐",
+  "requires": [
+   "eval-gold"
+  ],
+  "items": [
+   "w7d1b",
+   "w7d2a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w7",
+   "project": "med-docqa",
+   "tickets": [
+    "tk-wrong-retrieval"
+   ]
+  }
+ },
+ {
+  "id": "eval-judge",
+  "name": "LLM-as-Judge",
+  "category": "Evals",
+  "blurb": "You can design a rubric judge for groundedness and correctness, calibrate it against your own labels, and name its biases.",
+  "icon": "⚖️",
+  "requires": [
+   "eval-gold"
+  ],
+  "items": [
+   "w7d3a",
+   "w7d3b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w7",
+   "project": "med-docqa",
+   "tickets": [
+    "tk-hallucinated-citations"
+   ]
+  }
+ },
+ {
+  "id": "eval-harness",
+  "name": "Regression Gates & Error Analysis",
+  "category": "Evals",
+  "blurb": "You can run evals as code with thresholds that fail loudly, then read the worst transcripts and fix the failure category.",
+  "icon": "🚦",
+  "requires": [
+   "eval-metrics",
+   "eval-judge"
+  ],
+  "items": [
+   "w7d4a",
+   "w7d4b",
+   "w7d6a",
+   "w7d6b",
+   "w8d5a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w7",
+   "project": "med-docqa",
+   "tickets": [
+    "tk-eval-regression"
+   ]
+  }
+ },
+ {
+  "id": "sec-injection",
+  "name": "Prompt Injection Defence",
+  "category": "Security",
+  "blurb": "You can attack your own retrieval and agent paths with indirect injection, then layer mitigations and state the residual risk plainly.",
+  "icon": "🛡️",
+  "requires": [
+   "rag-grounding",
+   "agent-loops"
+  ],
+  "items": [
+   "w8d5b",
+   "w10d3a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w10",
+   "project": "cap-athena",
+   "tickets": [
+    "tk-prompt-injection"
+   ]
+  }
+ },
+ {
+  "id": "sec-secrets",
+  "name": "Secrets, PII & Tenancy",
+  "category": "Security",
+  "blurb": "You can keep secrets out of code and logs, redact PII before it is written, and enforce tenant isolation at the data layer with a test.",
+  "icon": "🔐",
+  "requires": [
+   "api-hardening",
+   "db-sql"
+  ],
+  "items": [
+   "w1d3b",
+   "w10d3b",
+   "w10d4a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w10",
+   "project": "cap-athena",
+   "tickets": [
+    "tk-webhook-replay"
+   ]
+  }
+ },
+ {
+  "id": "rel-resilience",
+  "name": "Resilience Patterns",
+  "category": "Reliability",
+  "blurb": "You can apply backoff with jitter, a circuit breaker and a fallback ladder so a provider blip degrades instead of cascading.",
+  "icon": "🩹",
+  "requires": [
+   "api-http",
+   "llm-apis"
+  ],
+  "items": [
+   "w2d3b",
+   "w10d2a",
+   "w10d2b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w10",
+   "project": "cap-athena",
+   "tickets": [
+    "tk-rate-storm"
+   ]
+  }
+ },
+ {
+  "id": "rel-observability",
+  "name": "Observability & Tracing",
+  "category": "Reliability",
+  "blurb": "You can emit structured logs and correlated traces across API, queue and worker, and read a latency tree to find the real bottleneck.",
+  "icon": "🔭",
+  "requires": [
+   "py-errors",
+   "db-queues"
+  ],
+  "items": [
+   "w1d5a",
+   "w10d1a",
+   "w10d1b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w10",
+   "project": "cap-athena",
+   "tickets": [
+    "tk-slow-p95"
+   ]
+  }
+ },
+ {
+  "id": "rel-debugging",
+  "name": "Systematic Debugging",
+  "category": "Reliability",
+  "blurb": "You can reproduce a failure, isolate it with a debugger or a trace, and fix the class of bug rather than the instance.",
+  "icon": "🐛",
+  "requires": [
+   "rel-observability"
+  ],
+  "items": [
+   "w1d5b",
+   "w2d4b",
+   "w4d4b",
+   "w9d2b"
+  ],
+  "evidence": {
+   "quiz": null,
+   "project": null,
+   "tickets": [
+    "tk-async-blocking",
+    "tk-stale-cache"
+   ]
+  }
+ },
+ {
+  "id": "cloud-docker",
+  "name": "Docker & Compose",
+  "category": "Cloud",
+  "blurb": "You can containerize an API and its worker with cache-friendly layers and bring the whole stack up with one compose command.",
+  "icon": "🐳",
+  "requires": [
+   "db-queues"
+  ],
+  "items": [
+   "w10d5a",
+   "w10d5b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w10",
+   "project": "cap-athena",
+   "tickets": []
+  }
+ },
+ {
+  "id": "cloud-cicd",
+  "name": "CI/CD & Deploy",
+  "category": "Cloud",
+  "blurb": "You can run lint, tests and an eval smoke on every pull request and ship the merged result to a public URL automatically.",
+  "icon": "🔄",
+  "requires": [
+   "be-testing",
+   "cloud-docker"
+  ],
+  "items": [
+   "w2d5a",
+   "w3d6a",
+   "w10d6a",
+   "w10d6b",
+   "w11d6a",
+   "w12d1a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w10",
+   "project": "cap-athena",
+   "tickets": [
+    "tk-eval-regression"
+   ]
+  }
+ },
+ {
+  "id": "sd-architecture",
+  "name": "AI Architecture",
+  "category": "System Design",
+  "blurb": "You can take a vague AI requirement to a defended component diagram with data flows, failure modes and a written decision record.",
+  "icon": "🏗️",
+  "requires": [
+   "db-queues",
+   "rag-retrieval"
+  ],
+  "items": [
+   "w9d5a",
+   "w11d1a",
+   "w12d1b",
+   "w12d5a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w9",
+   "project": "med-platform",
+   "tickets": [
+    "tk-slow-p95"
+   ]
+  }
+ },
+ {
+  "id": "sd-capacity",
+  "name": "Capacity & Cost Modelling",
+  "category": "System Design",
+  "blurb": "You can do the napkin math for tokens, storage, workers and spend at a given user count, and show which assumption dominates.",
+  "icon": "🧮",
+  "requires": [
+   "llm-cost",
+   "sd-architecture"
+  ],
+  "items": [
+   "w5d3b",
+   "w9d5b",
+   "w11d2b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w9",
+   "project": "med-platform",
+   "tickets": [
+    "tk-token-blowup"
+   ]
+  }
+ },
+ {
+  "id": "sd-platform",
+  "name": "Multi-Tenant Platform Build",
+  "category": "System Design",
+  "blurb": "You can assemble ingestion, retrieval, assistant mode, jobs and per-tenant isolation into one platform that holds together under load.",
+  "icon": "🏢",
+  "requires": [
+   "sd-architecture",
+   "cloud-cicd"
+  ],
+  "items": [
+   "w9d6a",
+   "w11d2a",
+   "w11d3a",
+   "w11d4a",
+   "w11d5a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w11",
+   "project": "cap-athena",
+   "tickets": [
+    "tk-duplicate-jobs"
+   ]
+  }
+ },
+ {
+  "id": "con-discovery",
+  "name": "Discovery & Scoping",
+  "category": "Consulting",
+  "blurb": "You can run a discovery conversation that finds the business problem, the data reality and the disqualifiers before any solution talk.",
+  "icon": "🕵️",
+  "requires": [],
+  "items": [
+   "w11d1b",
+   "w11d4b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w11",
+   "project": "cap-athena",
+   "tickets": []
+  }
+ },
+ {
+  "id": "con-proposal",
+  "name": "Proposals, ROI & Risk",
+  "category": "Consulting",
+  "blurb": "You can write a build-versus-buy case, a ranged cost model and a risk register that a sceptical client would actually sign.",
+  "icon": "📊",
+  "requires": [
+   "con-discovery",
+   "sd-capacity"
+  ],
+  "items": [
+   "w11d2b",
+   "w11d3b",
+   "w11d5b"
+  ],
+  "evidence": {
+   "quiz": "quiz-w11",
+   "project": "cap-athena",
+   "tickets": []
+  }
+ },
+ {
+  "id": "con-cases",
+  "name": "Case Method & Interview Craft",
+  "category": "Consulting",
+  "blurb": "You can work an unseen client case end to end under time pressure and turn your own projects into bullets and stories that survive follow-up.",
+  "icon": "💼",
+  "requires": [
+   "con-proposal",
+   "sd-platform"
+  ],
+  "items": [
+   "w12d2a",
+   "w12d2b",
+   "w12d3a",
+   "w12d3b",
+   "w12d4a",
+   "w12d4b",
+   "w12d5b",
+   "w12d6a"
+  ],
+  "evidence": {
+   "quiz": "quiz-w12",
+   "project": null,
+   "tickets": []
+  }
+ }
+]

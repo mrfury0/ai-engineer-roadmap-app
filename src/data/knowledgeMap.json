@@ -1,0 +1,516 @@
+{
+ "nodes": [
+  {
+   "id": "typing",
+   "label": "Type Hints",
+   "group": "Python",
+   "week": 1
+  },
+  {
+   "id": "pydantic",
+   "label": "Pydantic Models",
+   "group": "Backend",
+   "week": 1
+  },
+  {
+   "id": "validation",
+   "label": "Boundary Validation",
+   "group": "Backend",
+   "week": 1
+  },
+  {
+   "id": "async",
+   "label": "Async Concurrency",
+   "group": "Python",
+   "week": 2
+  },
+  {
+   "id": "retries",
+   "label": "Retries",
+   "group": "Reliability",
+   "week": 2
+  },
+  {
+   "id": "http",
+   "label": "HTTP Semantics",
+   "group": "APIs",
+   "week": 3
+  },
+  {
+   "id": "fastapi",
+   "label": "FastAPI Service",
+   "group": "APIs",
+   "week": 3
+  },
+  {
+   "id": "llmapi",
+   "label": "LLM API",
+   "group": "LLMs",
+   "week": 4
+  },
+  {
+   "id": "prompting",
+   "label": "Prompt Engineering",
+   "group": "LLMs",
+   "week": 4
+  },
+  {
+   "id": "structured",
+   "label": "Structured Output",
+   "group": "LLMs",
+   "week": 4
+  },
+  {
+   "id": "toolcalling",
+   "label": "Tool Calling",
+   "group": "Agents",
+   "week": 5
+  },
+  {
+   "id": "embeddings",
+   "label": "Embeddings",
+   "group": "RAG",
+   "week": 6
+  },
+  {
+   "id": "chunking",
+   "label": "Chunking",
+   "group": "RAG",
+   "week": 6
+  },
+  {
+   "id": "retrieval",
+   "label": "Retrieval",
+   "group": "RAG",
+   "week": 6
+  },
+  {
+   "id": "citations",
+   "label": "Grounded Citations",
+   "group": "RAG",
+   "week": 6
+  },
+  {
+   "id": "ragapi",
+   "label": "RAG API",
+   "group": "RAG",
+   "week": 6
+  },
+  {
+   "id": "goldset",
+   "label": "Golden Dataset",
+   "group": "Evals",
+   "week": 6
+  },
+  {
+   "id": "reranking",
+   "label": "Hybrid and Reranking",
+   "group": "RAG",
+   "week": 7
+  },
+  {
+   "id": "evalharness",
+   "label": "Eval Harness",
+   "group": "Evals",
+   "week": 7
+  },
+  {
+   "id": "agentloop",
+   "label": "Agent Loop",
+   "group": "Agents",
+   "week": 8
+  },
+  {
+   "id": "agentapi",
+   "label": "Agent API",
+   "group": "Agents",
+   "week": 8
+  },
+  {
+   "id": "postgres",
+   "label": "Postgres Persistence",
+   "group": "Databases",
+   "week": 9
+  },
+  {
+   "id": "redis",
+   "label": "Redis Cache",
+   "group": "Databases",
+   "week": 9
+  },
+  {
+   "id": "queues",
+   "label": "Queues and Workers",
+   "group": "Databases",
+   "week": 9
+  },
+  {
+   "id": "asyncjobs",
+   "label": "Async Jobs",
+   "group": "Databases",
+   "week": 9
+  },
+  {
+   "id": "platform",
+   "label": "Queued Platform",
+   "group": "System Design",
+   "week": 9
+  },
+  {
+   "id": "backoff",
+   "label": "Backoff and Jitter",
+   "group": "Reliability",
+   "week": 10
+  },
+  {
+   "id": "breaker",
+   "label": "Circuit Breaker",
+   "group": "Reliability",
+   "week": 10
+  },
+  {
+   "id": "fallbacks",
+   "label": "Fallback Ladder",
+   "group": "Reliability",
+   "week": 10
+  },
+  {
+   "id": "injection",
+   "label": "Injection Defence",
+   "group": "Security",
+   "week": 10
+  },
+  {
+   "id": "tenancy",
+   "label": "Tenant Isolation",
+   "group": "Security",
+   "week": 10
+  },
+  {
+   "id": "docker",
+   "label": "Docker Image",
+   "group": "Cloud",
+   "week": 10
+  },
+  {
+   "id": "ci",
+   "label": "CI Pipeline",
+   "group": "Cloud",
+   "week": 10
+  },
+  {
+   "id": "deploy",
+   "label": "Public Deploy",
+   "group": "Cloud",
+   "week": 10
+  },
+  {
+   "id": "observed",
+   "label": "Observed and Secured Service",
+   "group": "Reliability",
+   "week": 10
+  },
+  {
+   "id": "discovery",
+   "label": "Discovery",
+   "group": "Consulting",
+   "week": 11
+  },
+  {
+   "id": "costmodel",
+   "label": "Cost Model",
+   "group": "System Design",
+   "week": 11
+  },
+  {
+   "id": "architecture",
+   "label": "Architecture Proposal",
+   "group": "Consulting",
+   "week": 11
+  },
+  {
+   "id": "poc",
+   "label": "POC Plan",
+   "group": "Consulting",
+   "week": 11
+  },
+  {
+   "id": "prodsystem",
+   "label": "Deployed Production AI System",
+   "group": "System Design",
+   "week": 12
+  }
+ ],
+ "edges": [
+  {
+   "from": "typing",
+   "to": "pydantic",
+   "label": "types become schemas"
+  },
+  {
+   "from": "pydantic",
+   "to": "validation",
+   "label": "models guard the edge"
+  },
+  {
+   "from": "validation",
+   "to": "fastapi",
+   "label": "request bodies validated"
+  },
+  {
+   "from": "async",
+   "to": "fastapi",
+   "label": "handlers await IO"
+  },
+  {
+   "from": "async",
+   "to": "retries",
+   "label": "flaky IO needs retries"
+  },
+  {
+   "from": "http",
+   "to": "fastapi",
+   "label": "gives you the transport"
+  },
+  {
+   "from": "fastapi",
+   "to": "llmapi",
+   "label": "endpoint hosts the call"
+  },
+  {
+   "from": "llmapi",
+   "to": "prompting",
+   "label": "calls need instructions"
+  },
+  {
+   "from": "prompting",
+   "to": "structured",
+   "label": "output contract in prompt"
+  },
+  {
+   "from": "validation",
+   "to": "structured",
+   "label": "makes output parseable"
+  },
+  {
+   "from": "structured",
+   "to": "toolcalling",
+   "label": "tool args are schemas"
+  },
+  {
+   "from": "structured",
+   "to": "ragapi",
+   "label": "answers become typed"
+  },
+  {
+   "from": "llmapi",
+   "to": "embeddings",
+   "label": "same API, vectors out"
+  },
+  {
+   "from": "embeddings",
+   "to": "chunking",
+   "label": "vectors need sized text"
+  },
+  {
+   "from": "chunking",
+   "to": "retrieval",
+   "label": "chunks are searched"
+  },
+  {
+   "from": "retrieval",
+   "to": "reranking",
+   "label": "wide recall then precision"
+  },
+  {
+   "from": "retrieval",
+   "to": "citations",
+   "label": "sources back the claims"
+  },
+  {
+   "from": "prompting",
+   "to": "citations",
+   "label": "grounding is a contract"
+  },
+  {
+   "from": "citations",
+   "to": "ragapi",
+   "label": "grounded answers ship"
+  },
+  {
+   "from": "ragapi",
+   "to": "reranking",
+   "label": "its misses need precision"
+  },
+  {
+   "from": "reranking",
+   "to": "evalharness",
+   "label": "gains proved by numbers"
+  },
+  {
+   "from": "ragapi",
+   "to": "goldset",
+   "label": "real answers reveal questions"
+  },
+  {
+   "from": "goldset",
+   "to": "evalharness",
+   "label": "gold cases feed thresholds"
+  },
+  {
+   "from": "ragapi",
+   "to": "evalharness",
+   "label": "measure before improving"
+  },
+  {
+   "from": "retrieval",
+   "to": "agentloop",
+   "label": "search becomes a tool"
+  },
+  {
+   "from": "toolcalling",
+   "to": "agentloop",
+   "label": "tools make actions possible"
+  },
+  {
+   "from": "agentloop",
+   "to": "agentapi",
+   "label": "loop behind an endpoint"
+  },
+  {
+   "from": "evalharness",
+   "to": "agentapi",
+   "label": "agents need eval gates"
+  },
+  {
+   "from": "agentapi",
+   "to": "platform",
+   "label": "heavy work needs queues"
+  },
+  {
+   "from": "redis",
+   "to": "queues",
+   "label": "broker holds the jobs"
+  },
+  {
+   "from": "queues",
+   "to": "asyncjobs",
+   "label": "workers run heavy parts"
+  },
+  {
+   "from": "async",
+   "to": "asyncjobs",
+   "label": "workers are async too"
+  },
+  {
+   "from": "asyncjobs",
+   "to": "platform",
+   "label": "ingestion runs in background"
+  },
+  {
+   "from": "postgres",
+   "to": "platform",
+   "label": "state outlives the request"
+  },
+  {
+   "from": "redis",
+   "to": "platform",
+   "label": "shared cache and limits"
+  },
+  {
+   "from": "retries",
+   "to": "backoff",
+   "label": "naive retries stampede"
+  },
+  {
+   "from": "backoff",
+   "to": "breaker",
+   "label": "stop hammering dead services"
+  },
+  {
+   "from": "breaker",
+   "to": "fallbacks",
+   "label": "open circuit needs alternatives"
+  },
+  {
+   "from": "llmapi",
+   "to": "fallbacks",
+   "label": "model outages need alternatives"
+  },
+  {
+   "from": "fallbacks",
+   "to": "observed",
+   "label": "degrade instead of dying"
+  },
+  {
+   "from": "platform",
+   "to": "observed",
+   "label": "moving parts need visibility"
+  },
+  {
+   "from": "ragapi",
+   "to": "injection",
+   "label": "retrieved text carries instructions"
+  },
+  {
+   "from": "postgres",
+   "to": "tenancy",
+   "label": "tenant id per row"
+  },
+  {
+   "from": "injection",
+   "to": "observed",
+   "label": "untrusted text needs defence"
+  },
+  {
+   "from": "tenancy",
+   "to": "observed",
+   "label": "isolation before customers"
+  },
+  {
+   "from": "platform",
+   "to": "docker",
+   "label": "many services one command"
+  },
+  {
+   "from": "docker",
+   "to": "ci",
+   "label": "same image every run"
+  },
+  {
+   "from": "ci",
+   "to": "deploy",
+   "label": "green pipeline ships"
+  },
+  {
+   "from": "deploy",
+   "to": "prodsystem",
+   "label": "ships it to users"
+  },
+  {
+   "from": "observed",
+   "to": "prodsystem",
+   "label": "trustworthy enough to run"
+  },
+  {
+   "from": "discovery",
+   "to": "costmodel",
+   "label": "scope drives the numbers"
+  },
+  {
+   "from": "costmodel",
+   "to": "architecture",
+   "label": "budget shapes the design"
+  },
+  {
+   "from": "architecture",
+   "to": "poc",
+   "label": "design narrows to slice"
+  },
+  {
+   "from": "poc",
+   "to": "prodsystem",
+   "label": "proven slice becomes product"
+  }
+ ]
+}
