@@ -5,7 +5,7 @@ app that runs it. It is not a link dump. Every week has a build, a debug mission
 pass mark, and a project you can put in front of an interviewer. Your progress, notes, confidence
 ratings and spaced-repetition schedule live in the browser and go with you.
 
-**Live:** https://mrfury0.github.io/ai-engineer-roadmap/
+**Live:** https://mrfury0.github.io/ai-engineer-roadmap-app/
 
 ![The dashboard](docs/screenshot-dashboard.png)
 

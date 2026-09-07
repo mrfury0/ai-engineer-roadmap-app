@@ -13,7 +13,7 @@ and do **not** tick "Add a README" (this repo already has one).
 From inside this folder:
 
 ```bash
-git remote add origin https://github.com/mrfury0/ai-engineer-roadmap.git
+git remote add origin https://github.com/mrfury0/ai-engineer-roadmap-app.git
 git branch -M main
 git push -u origin main
 ```
@@ -26,7 +26,7 @@ Repo → **Settings** → **Pages** → under "Build and deployment", set **Sour
 The deploy runs on every push to `main`. Watch it under the **Actions** tab — first run
 takes about two minutes. Your site lands at:
 
-**https://mrfury0.github.io/ai-engineer-roadmap/**
+**https://mrfury0.github.io/ai-engineer-roadmap-app/**
 
 If the page loads blank, the base path is wrong — the workflow derives it from the repo
 name, so a repo named something other than `ai-engineer-roadmap` still works, but a
